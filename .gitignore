@@ -9,3 +9,12 @@ msg_gen/
 srv_gen/
 *.pyc
 *.*~
+CMakeLists.txt.user
+CMakeCache.txt
+CMakeFiles
+OpenTLDConfig.cmake
+TODO
+cmake_install.cmake
+*.a
+.pydevproject
+cmake_install.cmake
