@@ -1,0 +1,11 @@
+<!--xml-->
+<launch>
+  <node ns="eodCam" pkg="uvc_camera" type="stereo_node" name="stereo" output="screen">
+    <param name="width" type="int" value="640" />
+    <param name="height" type="int" value="480" />
+    <param name="fps" type="int" value="30" />
+    <param name="frame" type="string" value="webcam" />
+    <param name="left/device" type="string" value="/dev/video1" />
+    <param name="right/device" type="string" value="/dev/video2" />
+  </node>
+</launch>

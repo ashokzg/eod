@@ -1,0 +1,7 @@
+<!--xml-->
+<launch>
+    <node pkg="image_view" type="stereo_view" name="stereo_view"> 
+        <param name="stereo" value="/eodCam" />
+        <param name="image" value="image_rect_color" />
+    </node>
+</launch>
