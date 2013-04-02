@@ -34,7 +34,7 @@ void imageCallback(const sensor_msgs::ImageConstPtr& original_image)
 	catch (cv_bridge::Exception& e)
 	{
 		//if there is an error during conversion, display it
-		ROS_ERROR("tutorialROSOpenCV::main.cpp::cv_bridge exception: %s", e.what());
+		ROS_ERROR("monoCam::main.cpp::cv_bridge exception: %s", e.what());
 		return;
 	}
 
@@ -130,6 +130,6 @@ int main(int argc, char **argv)
 	*/
         ros::spin();
 	//ROS_INFO is the replacement for printf/cout.
-	ROS_INFO("tutorialROSOpenCV::main.cpp::No error.");
+	ROS_INFO("monoCam::main.cpp::No error.");
 
 }

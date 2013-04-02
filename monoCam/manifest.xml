@@ -1,13 +1,13 @@
 <package>
-  <description brief="tutorialROSOpenCV">
+  <description brief="monoCam">
 
-     tutorialROSOpenCV
+     monoCam
 
   </description>
   <author>Ashok</author>
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
-  <url>http://ros.org/wiki/tutorialROSOpenCV</url>
+  <url>http://ros.org/wiki/monoCam</url>
   <depend package="image_transport"/>
   <depend package="roscpp"/>
   <depend package="std_msgs"/>

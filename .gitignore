@@ -18,3 +18,4 @@ cmake_install.cmake
 *.a
 .pydevproject
 cmake_install.cmake
+_*.py
