@@ -33,8 +33,8 @@ using tld::Settings;
 
 #include "OpenTLD.h"
 #include "ros/ros.h"
-//#include <OpenTLD/Dest.h>
-#include "../../msg_gen/cpp/include/OpenTLD/Dest.h"  //This is a hack. Replace with proper header
+#include <OpenTLD/Dest.h>
+//#include "../../msg_gen/cpp/include/OpenTLD/Dest.h"  //This is a hack. Replace with proper header
 
 //Use image_transport for publishing and subscribing to images in ROS
 #include <image_transport/image_transport.h>
@@ -79,21 +79,17 @@ void imageCallback(const sensor_msgs::ImageConstPtr& original_image)
         ROS_ERROR("RosTLDWrapper::imageCallback::cv_bridge exception: %s", e.what());
         return;
     }
-    userDest.destPresent = true;
-    userDest.destX = 200;
-    userDest.destY = 200;
-    userDest.destHeight = 100;
-    userDest.destWidth = 100;
-    //printf("Obtained image");
-    if(tldInit == false && userDest.destPresent == true)
+
+    if(userDest.destPresent == true)
     {
-    	ROS_INFO("Came to init");
+    	ROS_INFO("Tracking INIT");
     	mainTld->doWork(userDest, cv_ptr->image);
     	tldInit = true;
+    	userDest.destPresent = false;
     }
-    else if(tldInit == true)
+    else if(tldInit == true) //Do not process until it is initialized atleast once
     {
-    	ROS_INFO("COming here");
+    	ROS_INFO("Tracking");
     	destination = mainTld->destTrack(&(cv_ptr->image));
     }
 
@@ -104,18 +100,12 @@ void imageCallback(const sensor_msgs::ImageConstPtr& original_image)
 
 void userSelectedDestination(const OpenTLD::Dest::ConstPtr& d)
 {
-	ROS_INFO("User selected destination, %d", d->destPresent);
+  ROS_INFO("User selected destination, %d", d->destPresent);
   userDest.destPresent = d->destPresent;
   userDest.destX = d->destX;
   userDest.destY = d->destY;
   userDest.destHeight = d->destHeight;
   userDest.destWidth = d->destWidth;
-
-  userDest.destPresent = true;
-  userDest.destX = 200;
-  userDest.destY = 200;
-  userDest.destHeight = 100;
-  userDest.destWidth = 100;
 }
 
 int main(int argc, char **argv)
@@ -137,7 +127,8 @@ int main(int argc, char **argv)
 	destination.destHeight = 0;
 	destPub.publish(destination);
 	ros::spinOnce();
-
+    
+    userDest.destPresent = false;
 
 	//Initialize the image transport subscriber
 	image_transport::ImageTransport it(nh);

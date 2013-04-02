@@ -10,4 +10,7 @@
   <depend package="opencv2"/>
   <depend package="cv_bridge"/>
   <depend package="uvc_camera"/>
+  <export>
+    <cpp cflags=" -I${prefix}/srv_gen/cpp/include"/>
+  </export>
 </package>
