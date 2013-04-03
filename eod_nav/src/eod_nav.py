@@ -5,6 +5,7 @@ import roslib; roslib.load_manifest('eod_nav')
 from teamb_ui.msg import Dest
 import std_msgs.msg
 from sensor_msgs.msg import CameraInfo
+from eod_nav.msg import Velocity
 
 class eodNav:
   #States of the robot
@@ -23,8 +24,9 @@ class eodNav:
   def __init__(self):
     rospy.init_node("eod_navigation")
     self.navState = self.IDLE
-    self.linVel = 0.0
-    self.angVel = 0.0
+    self.vel = Velocity()
+    self.vel.linVelPcent = 0.0
+    self.vel.angVelPcent = 0.0
     
     #Init the subscribers    
     #    UI
@@ -34,12 +36,10 @@ class eodNav:
     rospy.Subscriber("destination", Dest, self.trackedDest)
     #Init the publishers
     self.navStatePub = rospy.Publisher('Nav_State', std_msgs.msg.UInt32)
-    self.robotLinVelPub = rospy.Publisher('Robot_Lin_Vel', std_msgs.msg.Float32)
-    self.robotAngVelPub = rospy.Publisher('Robot_Ang_Vel', std_msgs.msg.Float32)
+    self.robotCmdPub = rospy.Publisher('cmd_vel', Velocity)
     
     self.navStatePub.publish(self.navState)
-    self.robotLinVelPub.publish(self.linVel)
-    self.robotAngVelPub.publish(self.angVel)
+    self.robotCmdPub.publish(self.vel)
     #Initialize values
     try:
       img = rospy.wait_for_message("camera/camera_info", CameraInfo, 2.0)
@@ -84,27 +84,26 @@ class eodNav:
   
   def robotMove(self, dir):
     if dir == self.STRAIGHT:
-      self.linVel = 0.8
-      self.angVel = 0.0
+      self.vel.linVelPcent = 0.8
+      self.vel.angVelPcent = 0.0
       rospy.logdebug("Straight")
       print "Straight"
     elif dir == self.LEFT:
-      self.linVel = 0.3
-      self.angVel = 0.3
+      self.vel.linVelPcent = 0.3
+      self.vel.angVelPcent = 0.3
       rospy.logdebug("Left")
       print "Left"
     elif dir == self.RIGHT:
-      self.linVel = 0.3
-      self.angVel = -0.3
+      self.vel.linVelPcent = 0.3
+      self.vel.angVelPcent = -0.3
       rospy.logdebug("Right")
       print "Right"
     else:
-      self.linVel = 0.0
-      self.angVel = 0.0
+      self.vel.linVelPcent = 0.0
+      self.vel.angVelPcent = 0.0
       rospy.logdebug("Stop")
       print "STOP"
-    self.robotLinVelPub.publish(self.linVel)
-    self.robotAngVelPub.publish(self.angVel)
+    self.robotCmdPub.publish(self.vel)
   
 if __name__ == "__main__":
   print "came here"
