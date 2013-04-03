@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1095</width>
-    <height>785</height>
+    <width>891</width>
+    <height>704</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -40,7 +40,7 @@
        <locale language="English" country="Australia"/>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tab_status">
        <attribute name="title">
@@ -87,8 +87,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>721</width>
-          <height>531</height>
+          <width>511</width>
+          <height>511</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -159,7 +159,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1095</width>
+     <width>891</width>
      <height>25</height>
     </rect>
    </property>
@@ -204,7 +204,7 @@
      <item>
       <widget class="QFrame" name="frame">
        <property name="sizePolicy">
-        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+        <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
@@ -323,7 +323,7 @@ TARGET</string>
           <x>10</x>
           <y>250</y>
           <width>311</width>
-          <height>401</height>
+          <height>321</height>
          </rect>
         </property>
         <property name="sizePolicy">

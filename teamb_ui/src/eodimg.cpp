@@ -69,7 +69,7 @@ void eodImg::mouseReleaseEvent(QMouseEvent *ev)
     rubber->show();
     xw = ev->pos().x()-x;
     yw = ev->pos().y()-y;
-    qDebug() <<xw<<yw;
+    //qDebug() <<xw<<yw;
 
     QMessageBox msgBox;
     msgBox.setText("Are you sure of the selection?");
@@ -78,7 +78,7 @@ void eodImg::mouseReleaseEvent(QMouseEvent *ev)
     msgBox.setEscapeButton(QMessageBox::Close);
     msgBox.setDefaultButton(QMessageBox::Apply);
     ret = msgBox.exec();
-    qDebug() <<ret;
+    //qDebug() <<ret;
     if(ret== 0x02000000)
     {
         QMessageBox msgBox2;

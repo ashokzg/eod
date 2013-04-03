@@ -33,7 +33,7 @@ bool QNode::init() {
 
     image_transport::ImageTransport it(n);
     sub = it.subscribe("/camera/image_raw", 1, &QNode::imageCallback,this);
-
+    sub2 = it.subscribe("Tracked_Destination", 1, &QNode::imageCallback2,this);
     start();
 	return true;
 }
@@ -139,6 +139,38 @@ void QNode::imageCallback(const sensor_msgs::ImageConstPtr& msg)
 
         Q_EMIT newImg(cv_ptr->image);
         //qDebug() <<"Image got";
+}
+
+void QNode::imageCallback2(const sensor_msgs::ImageConstPtr& msg)
+{
+    std_msgs::String info;
+    std::stringstream ss;
+
+    cv_bridge::CvImagePtr cv_ptr;
+        try
+        {
+            cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
+        }
+        catch (cv_bridge::Exception& e)
+        {
+            ss << "cv_bridge exception: %s"<<e.what();
+            info.data = ss.str();
+            log(Error,info.data.c_str());
+
+            ROS_ERROR("cv_bridge exception: %s", e.what());
+            return;
+        }
+
+        QImage *qImage = new QImage(
+                    cv_ptr->image.data,
+                    cv_ptr->image.size().width,
+                    cv_ptr->image.size().height,
+                    QImage::Format_RGB888
+                );
+        (*currImg) = (*qImage).rgbSwapped();
+
+        Q_EMIT newImg2(cv_ptr->image);
+
 }
 
 QImage* QNode::getCurrImg(){

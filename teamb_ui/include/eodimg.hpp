@@ -38,7 +38,6 @@ public Q_SLOTS:
 
 Q_SIGNALS:
 
-
 private:
     bool currentlySelecting;
     QGraphicsScene * scene;

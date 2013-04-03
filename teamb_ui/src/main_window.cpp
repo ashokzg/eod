@@ -34,7 +34,7 @@ MainWindow::MainWindow(int argc, char** argv, QWidget *parent)
     QObject::connect(&qnode, SIGNAL(rosShutdown()), this, SLOT(close()));
     QObject::connect(&qnode, SIGNAL(loggingUpdated()), this, SLOT(updateLoggingView()));
     QObject::connect(&qnode, SIGNAL(newImg(cv::Mat)), this, SLOT(updateNewImg(cv::Mat)));
-
+    QObject::connect(&qnode, SIGNAL(newImg2(cv::Mat)), this, SLOT(updateNewImg2(cv::Mat)));
     //Sending Mode change to ROS to be sent to robot
     QObject::connect(this, SIGNAL(changemode(int)), &qnode, SLOT(modeCallback(int)));
     QObject::connect(this, SIGNAL(updateRos()), &qnode, SLOT(update()));
@@ -88,14 +88,14 @@ void MainWindow::setTargetInPic()
             ui.tab_manager->setCurrentIndex(1);
         }
 
-        qDebug()<<"In Set Target Function";
-        qDebug()<<curr_state;
+        //qDebug()<<"In Set Target Function";
+        //qDebug()<<curr_state;
 
         const QImage tmp = (*(qnode.getCurrImg()));
         QPixmap p = QPixmap::fromImage(tmp);
         int r = ui.graphicsView->ret;
-        qDebug()<< r;
-        qDebug()<<ui.graphicsView->x<<ui.graphicsView->y;
+        //qDebug()<< r;
+        //qDebug()<<ui.graphicsView->x<<ui.graphicsView->y;
         if(ui.graphicsView->ret== 0x02000000)
         Q_EMIT mouseOverInfo(ui.graphicsView->x,ui.graphicsView->y,ui.graphicsView->xw,ui.graphicsView->yw);
     }else{
@@ -113,6 +113,11 @@ void MainWindow::updateLoggingView() {
 void MainWindow::updateNewImg(cv::Mat img)
 {   ui.graphicsView->resize(img.cols, img.rows);
     ui.graphicsView->updateImage(img);
+}
+
+void MainWindow::updateNewImg2(cv::Mat img)
+{   ui.graphicsView_2->resize(img.cols, img.rows);
+    ui.graphicsView_2->updateImage(img);
 }
 
 void MainWindow::updateLabel()

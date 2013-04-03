@@ -51,15 +51,18 @@ public:
 	void log( const LogLevel &level, const std::string &msg);
 	void modefbFromRobot(const std_msgs::String::ConstPtr& msg);
     void imageCallback(const sensor_msgs::ImageConstPtr& msg);
+    void imageCallback2(const sensor_msgs::ImageConstPtr& msg);
 	void timercallback(const ros::TimerEvent&);
     void shutdown();
 	QImage* getCurrImg();
+
 
 Q_SIGNALS:
 	void loggingUpdated();
     void rosShutdown();
     void imgUpdated();
     void newImg(cv::Mat img);
+    void newImg2(cv::Mat img);
 
 public Q_SLOTS:
     void modeCallback(int);
@@ -74,6 +77,7 @@ private:
     ros::Publisher status;
     ros::Subscriber robotStatus;
 	image_transport::Subscriber sub;
+	image_transport::Subscriber sub2;
 	QImage *currImg; 
 	QStringListModel logging_model;
 };

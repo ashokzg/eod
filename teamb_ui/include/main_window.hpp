@@ -76,6 +76,7 @@ public Q_SLOTS:
     void setTargetInPic();
     void updateLoggingView();
     void updateNewImg(cv::Mat img);
+    void updateNewImg2(cv::Mat img);
     void updateLabel();
 
   Q_SIGNALS:
