@@ -1,0 +1,19 @@
+<package>
+  <description brief="eod_nav">
+
+     eod_nav
+
+  </description>
+  <author>Ashok</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/eod_nav</url>
+  <depend package="rospy"/>
+  <depend package="OpenTLD"/>
+  <depend package="teamb_ui"/>
+  <depend package="std_msgs"/>
+  <depend package="geometry_msgs"/>
+
+</package>
+
+
