@@ -48,13 +48,7 @@ public:
         tracking,
         auto_nav
     };
-    enum modeState{
-        autoMode,
-        manMode
-    };
 
-    int curr_mode;
-    int prev_state;
     int curr_state;
     QTimer *timer;
     QTimer *lblTimer;
@@ -62,10 +56,8 @@ public:
     void closeEvent(QCloseEvent *event);
     void showNoMasterMessage();
     void commandToShell(QString msg);
-    void Message(const QString msg);
-
-    int sendMode();
-    int sendState();
+    void Msg(const QString msg);
+    int MsgWithOKCancel(const QString msg);
 
 public Q_SLOTS:
     void connectToROS();
@@ -83,6 +75,7 @@ public Q_SLOTS:
     void changemode(int);
     void updateRos();
     void mouseOverInfo(int,int,int,int);
+    void sendState(int);
 
 private:
     cv::Mat image;

@@ -22,7 +22,6 @@ class eodImg : public QGraphicsView
 public:
     explicit eodImg(QWidget *parent = 0);
     int x,y,xw,yw;
-    int ret;
     QRubberBand* rubber;
     QRect getImgSelection(){
     return rubber->geometry();}

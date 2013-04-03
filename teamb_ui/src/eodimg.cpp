@@ -4,6 +4,10 @@
 eodImg::eodImg(QWidget *parent) :
     QGraphicsView(parent),rubber(new QRubberBand(QRubberBand::Rectangle, this))
 {
+    x = 0;
+    y = 0;
+    xw = 0;
+    yw = 0;
     rubber->setMouseTracking(true);
     currentlySelecting = false;
     scene = new QGraphicsScene(this);
@@ -69,32 +73,6 @@ void eodImg::mouseReleaseEvent(QMouseEvent *ev)
     rubber->show();
     xw = ev->pos().x()-x;
     yw = ev->pos().y()-y;
-    //qDebug() <<xw<<yw;
-
-    QMessageBox msgBox;
-    msgBox.setText("Are you sure of the selection?");
-    msgBox.setInformativeText("Do you want to go ahead or reselect?");
-    msgBox.setStandardButtons(QMessageBox::Apply | QMessageBox::Cancel);
-    msgBox.setEscapeButton(QMessageBox::Close);
-    msgBox.setDefaultButton(QMessageBox::Apply);
-    ret = msgBox.exec();
-    //qDebug() <<ret;
-    if(ret== 0x02000000)
-    {
-        QMessageBox msgBox2;
-        msgBox2.setText("Please press Set Target to confirm ROI");
-        msgBox2.setStandardButtons(QMessageBox::Ok);
-        msgBox2.exec();
-    }
-    else
-//    if(ret!= 0x02000000)
-    {
-        QMessageBox msgBox2;
-        msgBox2.setText("Please re-select target!");
-        msgBox2.exec();
-        rubber->hide();
-    }
-
 
     }
     }
