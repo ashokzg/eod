@@ -1,7 +1,7 @@
 /****************************************************************************
 ** Meta object code from reading C++ file 'main_window.hpp'
 **
-** Created: Wed Apr 3 20:09:59 2013
+** Created: Wed Apr 3 22:21:53 2013
 **      by: The Qt Meta Object Compiler version 63 (Qt 4.8.1)
 **
 ** WARNING! All changes made in this file will be lost!
@@ -47,7 +47,7 @@ static const uint qt_meta_data_teamb_ui__MainWindow[] = {
      231,  227,   21,   21, 0x0a,
      253,  227,   21,   21, 0x0a,
      275,   21,   21,   21, 0x0a,
-     289,   50,   21,   21, 0x0a,
+     294,  289,   21,   21, 0x0a,
 
        0        // eod
 };
@@ -61,7 +61,7 @@ static const char qt_meta_stringdata_teamb_ui__MainWindow[] = {
     "setTargetInPic()\0updateLoggingView()\0"
     "img\0updateNewImg(cv::Mat)\0"
     "updateTrkImg(cv::Mat)\0updateLabel()\0"
-    "paintRectangle(int,int,int,int)\0"
+    ",,,,\0paintRectangle(bool,int,int,int,int)\0"
 };
 
 void teamb_ui::MainWindow::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void **_a)
@@ -84,7 +84,7 @@ void teamb_ui::MainWindow::qt_static_metacall(QObject *_o, QMetaObject::Call _c,
         case 11: _t->updateNewImg((*reinterpret_cast< cv::Mat(*)>(_a[1]))); break;
         case 12: _t->updateTrkImg((*reinterpret_cast< cv::Mat(*)>(_a[1]))); break;
         case 13: _t->updateLabel(); break;
-        case 14: _t->paintRectangle((*reinterpret_cast< int(*)>(_a[1])),(*reinterpret_cast< int(*)>(_a[2])),(*reinterpret_cast< int(*)>(_a[3])),(*reinterpret_cast< int(*)>(_a[4]))); break;
+        case 14: _t->paintRectangle((*reinterpret_cast< bool(*)>(_a[1])),(*reinterpret_cast< int(*)>(_a[2])),(*reinterpret_cast< int(*)>(_a[3])),(*reinterpret_cast< int(*)>(_a[4])),(*reinterpret_cast< int(*)>(_a[5]))); break;
         default: ;
         }
     }

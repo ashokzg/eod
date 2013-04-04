@@ -70,7 +70,7 @@ public Q_SLOTS:
     void updateNewImg(cv::Mat img);
     void updateTrkImg(cv::Mat img);
     void updateLabel();
-    void paintRectangle(int,int,int,int);
+    void paintRectangle(bool,int,int,int,int);
 
   Q_SIGNALS:
     void changemode(int);

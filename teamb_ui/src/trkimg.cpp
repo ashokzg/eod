@@ -27,9 +27,19 @@ QImage trkImg::Mat2QImage(const cv::Mat3b &src)
         return dest;
 }
 
-void trkImg::input(int x, int y, int xw, int yw){
-    rubber->setGeometry(x,y,xw,yw);
-	rubber->show();
+
+
+void trkImg::input(bool val,int x, int y, int xw, int yw){
+    qDebug()<<x<<y;
+
+    if(val){
+        rubber->setGeometry(x,y,xw,yw);
+        rubber->show();
+    }
+    else
+    {
+        rubber->hide();
+    }
 
 }
 

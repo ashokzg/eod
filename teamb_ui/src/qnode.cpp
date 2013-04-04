@@ -64,15 +64,15 @@ void QNode::publishInfo(int x, int y, int xw, int yw){
 }
 
 void QNode::sendCoord(const Dest ImgAreaRecvd){
-    int x,y,xw,yw;
-    if (ImgAreaRecvd.destPresent){
+        bool destPresent;
+        int x,y,xw,yw;
+        destPresent = ImgAreaRecvd.destPresent;
         x = ImgAreaRecvd.destX;
         y = ImgAreaRecvd.destY;
         xw = ImgAreaRecvd.destWidth;
         yw = ImgAreaRecvd.destHeight;
         qDebug()<<"Img Coord Recvd"<<x<<y<<xw<<yw;
-        Q_EMIT coordRecvd(x,y,xw,yw);
-    }
+        Q_EMIT coordRecvd(destPresent,x,y,xw,yw);
 }
 
 void QNode::log( const LogLevel &level, const std::string &msg) {

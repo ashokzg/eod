@@ -1,7 +1,7 @@
 /****************************************************************************
 ** Meta object code from reading C++ file 'qnode.hpp'
 **
-** Created: Wed Apr 3 20:09:59 2013
+** Created: Wed Apr 3 22:21:53 2013
 **      by: The Qt Meta Object Compiler version 63 (Qt 4.8.1)
 **
 ** WARNING! All changes made in this file will be lost!
@@ -36,12 +36,12 @@ static const uint qt_meta_data_teamb_ui__QNode[] = {
       48,   16,   16,   16, 0x05,
       65,   61,   16,   16, 0x05,
       81,   61,   16,   16, 0x05,
-     105,  101,   16,   16, 0x05,
+     106,  101,   16,   16, 0x05,
 
  // slots: signature, parameters, type, tag, flags
-     133,   16,   16,   16, 0x0a,
-     142,  101,   16,   16, 0x0a,
-     171,   16,   16,   16, 0x0a,
+     139,   16,   16,   16, 0x0a,
+     152,  148,   16,   16, 0x0a,
+     181,   16,   16,   16, 0x0a,
 
        0        // eod
 };
@@ -50,8 +50,8 @@ static const char qt_meta_stringdata_teamb_ui__QNode[] = {
     "teamb_ui::QNode\0\0loggingUpdated()\0"
     "rosShutdown()\0updateMode()\0img\0"
     "newImg(cv::Mat)\0trkImgDisp(cv::Mat)\0"
-    ",,,\0coordRecvd(int,int,int,int)\0"
-    "update()\0publishInfo(int,int,int,int)\0"
+    ",,,,\0coordRecvd(bool,int,int,int,int)\0"
+    "update()\0,,,\0publishInfo(int,int,int,int)\0"
     "publishState(int)\0"
 };
 
@@ -66,7 +66,7 @@ void teamb_ui::QNode::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int 
         case 2: _t->updateMode(); break;
         case 3: _t->newImg((*reinterpret_cast< cv::Mat(*)>(_a[1]))); break;
         case 4: _t->trkImgDisp((*reinterpret_cast< cv::Mat(*)>(_a[1]))); break;
-        case 5: _t->coordRecvd((*reinterpret_cast< int(*)>(_a[1])),(*reinterpret_cast< int(*)>(_a[2])),(*reinterpret_cast< int(*)>(_a[3])),(*reinterpret_cast< int(*)>(_a[4]))); break;
+        case 5: _t->coordRecvd((*reinterpret_cast< bool(*)>(_a[1])),(*reinterpret_cast< int(*)>(_a[2])),(*reinterpret_cast< int(*)>(_a[3])),(*reinterpret_cast< int(*)>(_a[4])),(*reinterpret_cast< int(*)>(_a[5]))); break;
         case 6: _t->update(); break;
         case 7: _t->publishInfo((*reinterpret_cast< int(*)>(_a[1])),(*reinterpret_cast< int(*)>(_a[2])),(*reinterpret_cast< int(*)>(_a[3])),(*reinterpret_cast< int(*)>(_a[4]))); break;
         case 8: _t->publishState((*reinterpret_cast< int(*)>(_a[1]))); break;
@@ -147,9 +147,9 @@ void teamb_ui::QNode::trkImgDisp(cv::Mat _t1)
 }
 
 // SIGNAL 5
-void teamb_ui::QNode::coordRecvd(int _t1, int _t2, int _t3, int _t4)
+void teamb_ui::QNode::coordRecvd(bool _t1, int _t2, int _t3, int _t4, int _t5)
 {
-    void *_a[] = { 0, const_cast<void*>(reinterpret_cast<const void*>(&_t1)), const_cast<void*>(reinterpret_cast<const void*>(&_t2)), const_cast<void*>(reinterpret_cast<const void*>(&_t3)), const_cast<void*>(reinterpret_cast<const void*>(&_t4)) };
+    void *_a[] = { 0, const_cast<void*>(reinterpret_cast<const void*>(&_t1)), const_cast<void*>(reinterpret_cast<const void*>(&_t2)), const_cast<void*>(reinterpret_cast<const void*>(&_t3)), const_cast<void*>(reinterpret_cast<const void*>(&_t4)), const_cast<void*>(reinterpret_cast<const void*>(&_t5)) };
     QMetaObject::activate(this, &staticMetaObject, 5, _a);
 }
 QT_END_MOC_NAMESPACE

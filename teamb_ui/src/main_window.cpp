@@ -32,7 +32,7 @@ MainWindow::MainWindow(int argc, char** argv, QWidget *parent)
     QObject::connect(&qnode, SIGNAL(loggingUpdated()), this, SLOT(updateLoggingView()));
     QObject::connect(&qnode, SIGNAL(newImg(cv::Mat)), this, SLOT(updateNewImg(cv::Mat)));
     QObject::connect(&qnode, SIGNAL(trkImgDisp(cv::Mat)), this, SLOT(updateTrkImg(cv::Mat)));
-    QObject::connect(&qnode, SIGNAL(coordRecvd(int,int,int,int)), this, SLOT(paintRectangle(int,int,int,int)));
+    QObject::connect(&qnode, SIGNAL(coordRecvd(bool,int,int,int,int)), this, SLOT(paintRectangle(bool,int,int,int,int)));
 
     //Sending Mode change to ROS to be sent to robot
     QObject::connect(this, SIGNAL(updateRos()), &qnode, SLOT(update()));
@@ -121,8 +121,8 @@ void MainWindow::updateTrkImg(cv::Mat img)
 
 }
 
-void MainWindow::paintRectangle(int x, int y, int xw, int yw){
-    ui.graphicsView_2->input(x,y,xw,yw);
+void MainWindow::paintRectangle(bool val, int x, int y, int xw, int yw){
+    ui.graphicsView_2->input(val,x,y,xw,yw);
 }
 
 void MainWindow::updateLabel()

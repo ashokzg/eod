@@ -64,7 +64,7 @@ Q_SIGNALS:
     void updateMode();
     void newImg(cv::Mat img);
     void trkImgDisp(cv::Mat img);
-    void coordRecvd(int,int,int,int);
+    void coordRecvd(bool,int,int,int,int);
 
 public Q_SLOTS:
 	void update();
