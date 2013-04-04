@@ -1,8 +1,7 @@
 #include "trkimg.hpp"
-#include "main_window.hpp"
 
 trkImg::trkImg(QWidget *parent) :
-    QGraphicsView(parent),rubber(new QRubberBand(QRubberBand::Rectangle, this))
+    QGraphicsView(parent),rubber(new rbrBand(QRubberBand::Rectangle, this))
 {
     scene = new QGraphicsScene(this);
     scene->addItem(&qAshImg);
@@ -34,6 +33,7 @@ void trkImg::input(bool val,int x, int y, int xw, int yw){
 
     if(val){
         rubber->setGeometry(x,y,xw,yw);
+        rubber->palette.setBrush(QPalette::Foreground, QBrush(Qt::green));
         rubber->show();
     }
     else

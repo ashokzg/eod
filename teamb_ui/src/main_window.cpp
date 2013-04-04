@@ -55,6 +55,7 @@ void MainWindow::connectToROS() {
             ui.pb_connect->setEnabled(false);
             ui.cb_enableManualCtrl->setEnabled(true);
             curr_state = idle_manual;
+            Q_EMIT sendState(curr_state);
 
             timer = new QTimer(this);
             lblTimer = new QTimer(this);
@@ -84,12 +85,9 @@ int MainWindow::MsgWithOKCancel(const QString msg){
 
 void MainWindow::setTargetInPic()
 {
-    //qDebug()<<"XW";
-    //qDebug()<<ui.graphicsView->xw;
-    //qDebug()<<ui.graphicsView->yw;
-
         if(curr_state == idle_manual){
             curr_state = tracking;
+            Q_EMIT sendState(curr_state);
             ui.pb_setTarget->setEnabled(false);
             ui.pb_confirmTracking->setEnabled(true);
             ui.cb_enableManualCtrl->setEnabled(false);
@@ -141,8 +139,6 @@ void MainWindow::updateLabel()
         ui.lbl_modeStatus->setText("Auto Navigation");
         break;
     }
-    Q_EMIT sendState(curr_state);
-
 }
 
 void MainWindow::confirmTracking(){
@@ -152,6 +148,8 @@ void MainWindow::confirmTracking(){
         qnode.log(QNode::Info,"Tracking confirmed.");
         ui.pb_confirmTracking->setEnabled(false);
         curr_state = auto_nav;
+        Q_EMIT sendState(curr_state);
+
     }
     else{
         qnode.log(QNode::Info,"Please start mission or select manual mode.");
@@ -160,6 +158,7 @@ void MainWindow::confirmTracking(){
 
 void MainWindow::resetToIdleManual(){
     curr_state = idle_manual;
+    Q_EMIT sendState(curr_state);
 
     qnode.log(QNode::Info,"Back to Idle/Manual State.");
 
@@ -189,6 +188,8 @@ void MainWindow::toggleManualMode(int cb_state){
         ui.pb_setTarget->setEnabled(false);
         qnode.log(QNode::Info,"Manual mode. Please Use Joystick");
         curr_state = idle_manual;
+        Q_EMIT sendState(curr_state);
+
     }
 
 }
