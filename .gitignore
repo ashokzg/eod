@@ -19,3 +19,4 @@ cmake_install.cmake
 .pydevproject
 cmake_install.cmake
 _*.py
+qtcreator-build/
