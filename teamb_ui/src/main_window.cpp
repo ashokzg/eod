@@ -164,7 +164,7 @@ void MainWindow::resetToIdleManual(){
     qnode.log(QNode::Info,"Back to Idle/Manual State.");
 
     ui.cb_enableManualCtrl->setEnabled(true);
-    ui.pb_confirmTracking->hide();
+    ui.pb_confirmTracking->setEnabled(false);
     ui.pb_setTarget->setEnabled(true);
     ui.tab_manager->setCurrentIndex(0);
     ui.graphicsView->rubber->hide();

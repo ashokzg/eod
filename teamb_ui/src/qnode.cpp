@@ -34,7 +34,7 @@ bool QNode::init() {
     sub = it.subscribe("/camera/image_raw", 1, &QNode::imageCallback,this);
 //   sub2 = it.subscribe("/camera/image_raw", 1, &QNode::imageCallback2,this);
     sub2 = it.subscribe("Tracked_Destination", 1, &QNode::imageCallback2,this);
-    rect_msg = n.subscribe("/Destination", 1, &QNode::sendCoord,this);
+    rect_msg = n.subscribe("/destination", 1, &QNode::sendCoord,this);
     start();
 	return true;
 }
@@ -70,6 +70,7 @@ void QNode::sendCoord(const Dest ImgAreaRecvd){
         y = ImgAreaRecvd.destY;
         xw = ImgAreaRecvd.destWidth;
         yw = ImgAreaRecvd.destHeight;
+        qDebug()<<"Img Coord Recvd"<<x<<y<<xw<<yw;
         Q_EMIT coordRecvd(x,y,xw,yw);
     }
 }

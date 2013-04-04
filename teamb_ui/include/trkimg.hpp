@@ -6,6 +6,8 @@
 #include <QtGui>
 #include <QGraphicsView>
 #include <QGraphicsScene>
+#include <QRubberBand>
+#include <QPointF>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -15,9 +17,9 @@ class trkImg : public QGraphicsView
     Q_OBJECT
 public:
     explicit trkImg(QWidget *parent = 0);
-
+    QRubberBand* rubber;
     void input(int,int,int,int);
-    int x, y, xw, yw;
+
 public Q_SLOTS:
     void updateImage(cv::Mat img);
 
@@ -28,7 +30,7 @@ private:
     QGraphicsPixmapItem qAshImg;
 //    cv::Mat curFrame, curFrameRGB;
     QImage Mat2QImage(const cv::Mat3b &src);
-    void paintEvent(QPaintEvent *ev);
+    //void paintEvent(QPaintEvent *ev);
     QGraphicsRectItem* rect;
 };
 

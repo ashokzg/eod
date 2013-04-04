@@ -27,7 +27,7 @@ class eodNav:
     self.vel = Velocity()
     self.vel.linVelPcent = 0.0
     self.vel.angVelPcent = 0.0
-    
+    print "Came to init"
     #Init the subscribers    
     #    UI
     rospy.Subscriber("UserDestination", Dest, self.userDest)
@@ -63,6 +63,7 @@ class eodNav:
     pass
   
   def trackedDest(self, data):
+    #print "tracking in state", self.navState 
     if self.navState in [self.AUTO_MODE, self.DEST_LOST]:
       if data.destPresent == True:
         self.navState = self.AUTO_MODE

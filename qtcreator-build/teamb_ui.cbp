@@ -1,0 +1,339 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+   <FileVersion major="1" minor="6" />
+   <Project>
+      <Option title="teamb_ui" />
+      <Option makefile_is_custom="1" />
+      <Option compiler="gcc" />
+      <Option virtualFolders="CMake Files\;CMake Files\..\;CMake Files\..\..\;CMake Files\..\..\..\;CMake Files\..\..\..\..\;CMake Files\..\..\..\..\opt\;CMake Files\..\..\..\..\opt\ros\;CMake Files\..\..\..\..\opt\ros\fuerte\;CMake Files\..\..\..\..\opt\ros\fuerte\share\;CMake Files\..\..\..\..\opt\ros\fuerte\share\ros\;CMake Files\..\..\..\..\opt\ros\fuerte\share\ros\core\;CMake Files\..\..\..\..\opt\ros\fuerte\share\ros\core\rosbuild\;CMake Files\..\..\..\..\opt\ros\fuerte\share\roslang\;CMake Files\..\..\..\..\opt\ros\fuerte\share\roslang\cmake\;CMake Files\..\..\..\..\opt\ros\fuerte\share\roscpp\;CMake Files\..\..\..\..\opt\ros\fuerte\share\roscpp\rosbuild\;CMake Files\..\..\..\..\opt\ros\fuerte\share\rospy\;CMake Files\..\..\..\..\opt\ros\fuerte\share\rospy\rosbuild\;CMake Files\..\..\..\..\opt\ros\fuerte\share\roslisp\;CMake Files\..\..\..\..\opt\ros\fuerte\share\roslisp\rosbuild\;CMake Files\..\..\..\..\opt\ros\fuerte\stacks\;CMake Files\..\..\..\..\opt\ros\fuerte\stacks\qt_ros\;CMake Files\..\..\..\..\opt\ros\fuerte\stacks\qt_ros\qt_build\;CMake Files\resources\;" />
+      <Build>
+      <Target title="all">
+         <Option working_dir="/home/teamb/eod/qtcreator-build" />
+         <Option type="4" />
+         <MakeCommands>
+            <Build command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 all" />
+            <CompileFile command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 &quot;$file&quot;" />
+            <Clean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+            <DistClean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+         </MakeCommands>
+      </Target>
+      <Target title="ROSBUILD_genmsg_cpp">
+         <Option working_dir="/home/teamb/eod/qtcreator-build" />
+         <Option type="4" />
+         <MakeCommands>
+            <Build command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 ROSBUILD_genmsg_cpp" />
+            <CompileFile command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 &quot;$file&quot;" />
+            <Clean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+            <DistClean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+         </MakeCommands>
+      </Target>
+      <Target title="ROSBUILD_genmsg_lisp">
+         <Option working_dir="/home/teamb/eod/qtcreator-build" />
+         <Option type="4" />
+         <MakeCommands>
+            <Build command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 ROSBUILD_genmsg_lisp" />
+            <CompileFile command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 &quot;$file&quot;" />
+            <Clean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+            <DistClean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+         </MakeCommands>
+      </Target>
+      <Target title="ROSBUILD_genmsg_py">
+         <Option working_dir="/home/teamb/eod/qtcreator-build" />
+         <Option type="4" />
+         <MakeCommands>
+            <Build command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 ROSBUILD_genmsg_py" />
+            <CompileFile command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 &quot;$file&quot;" />
+            <Clean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+            <DistClean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+         </MakeCommands>
+      </Target>
+      <Target title="ROSBUILD_gensrv_cpp">
+         <Option working_dir="/home/teamb/eod/qtcreator-build" />
+         <Option type="4" />
+         <MakeCommands>
+            <Build command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 ROSBUILD_gensrv_cpp" />
+            <CompileFile command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 &quot;$file&quot;" />
+            <Clean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+            <DistClean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+         </MakeCommands>
+      </Target>
+      <Target title="ROSBUILD_gensrv_lisp">
+         <Option working_dir="/home/teamb/eod/qtcreator-build" />
+         <Option type="4" />
+         <MakeCommands>
+            <Build command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 ROSBUILD_gensrv_lisp" />
+            <CompileFile command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 &quot;$file&quot;" />
+            <Clean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+            <DistClean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+         </MakeCommands>
+      </Target>
+      <Target title="clean-test-results">
+         <Option working_dir="/home/teamb/eod/qtcreator-build" />
+         <Option type="4" />
+         <MakeCommands>
+            <Build command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean-test-results" />
+            <CompileFile command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 &quot;$file&quot;" />
+            <Clean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+            <DistClean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+         </MakeCommands>
+      </Target>
+      <Target title="edit_cache">
+         <Option working_dir="/home/teamb/eod/qtcreator-build" />
+         <Option type="4" />
+         <MakeCommands>
+            <Build command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 edit_cache" />
+            <CompileFile command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 &quot;$file&quot;" />
+            <Clean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+            <DistClean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+         </MakeCommands>
+      </Target>
+      <Target title="rebuild_cache">
+         <Option working_dir="/home/teamb/eod/qtcreator-build" />
+         <Option type="4" />
+         <MakeCommands>
+            <Build command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 rebuild_cache" />
+            <CompileFile command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 &quot;$file&quot;" />
+            <Clean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+            <DistClean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+         </MakeCommands>
+      </Target>
+      <Target title="rosbuild_precompile">
+         <Option working_dir="/home/teamb/eod/qtcreator-build" />
+         <Option type="4" />
+         <MakeCommands>
+            <Build command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 rosbuild_precompile" />
+            <CompileFile command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 &quot;$file&quot;" />
+            <Clean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+            <DistClean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+         </MakeCommands>
+      </Target>
+      <Target title="rosbuild_premsgsrvgen">
+         <Option working_dir="/home/teamb/eod/qtcreator-build" />
+         <Option type="4" />
+         <MakeCommands>
+            <Build command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 rosbuild_premsgsrvgen" />
+            <CompileFile command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 &quot;$file&quot;" />
+            <Clean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+            <DistClean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+         </MakeCommands>
+      </Target>
+      <Target title="rospack_genmsg">
+         <Option working_dir="/home/teamb/eod/qtcreator-build" />
+         <Option type="4" />
+         <MakeCommands>
+            <Build command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 rospack_genmsg" />
+            <CompileFile command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 &quot;$file&quot;" />
+            <Clean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+            <DistClean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+         </MakeCommands>
+      </Target>
+      <Target title="rospack_genmsg_all">
+         <Option working_dir="/home/teamb/eod/qtcreator-build" />
+         <Option type="4" />
+         <MakeCommands>
+            <Build command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 rospack_genmsg_all" />
+            <CompileFile command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 &quot;$file&quot;" />
+            <Clean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+            <DistClean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+         </MakeCommands>
+      </Target>
+      <Target title="rospack_genmsg_libexe">
+         <Option working_dir="/home/teamb/eod/qtcreator-build" />
+         <Option type="4" />
+         <MakeCommands>
+            <Build command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 rospack_genmsg_libexe" />
+            <CompileFile command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 &quot;$file&quot;" />
+            <Clean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+            <DistClean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+         </MakeCommands>
+      </Target>
+      <Target title="rospack_gensrv">
+         <Option working_dir="/home/teamb/eod/qtcreator-build" />
+         <Option type="4" />
+         <MakeCommands>
+            <Build command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 rospack_gensrv" />
+            <CompileFile command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 &quot;$file&quot;" />
+            <Clean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+            <DistClean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+         </MakeCommands>
+      </Target>
+      <Target title="teamb_ui">
+         <Option output="/home/teamb/eod/teamb_ui/bin/teamb_ui" prefix_auto="0" extension_auto="0" />
+         <Option working_dir="/home/teamb/eod/teamb_ui/bin" />
+         <Option object_output="./" />
+         <Option type="1" />
+         <Option compiler="gcc" />
+         <Compiler>
+            <Add option="-DQT_GUI_LIB" />
+            <Add option="-DQT_CORE_LIB" />
+            <Add directory="/home/teamb/eod/qtcreator-build" />
+            <Add directory="/home/teamb/eod/teamb_ui/include" />
+            <Add directory="/home/teamb/eod/teamb_ui/msg_gen/cpp/include" />
+            <Add directory="/opt/ros/fuerte/include" />
+            <Add directory="/opt/ros/fuerte/include/opencv" />
+            <Add directory="/opt/ros/fuerte/stacks/image_common/image_transport/include" />
+            <Add directory="/opt/ros/fuerte/stacks/pluginlib" />
+            <Add directory="/opt/ros/fuerte/stacks/pluginlib/include" />
+            <Add directory="/opt/ros/fuerte/stacks/vision_opencv/cv_bridge/include" />
+            <Add directory="/usr/include" />
+            <Add directory="/usr/include/c++/4.6" />
+            <Add directory="/usr/include/c++/4.6/backward" />
+            <Add directory="/usr/include/c++/4.6/i686-linux-gnu/." />
+            <Add directory="/usr/include/i386-linux-gnu" />
+            <Add directory="/usr/include/qt4" />
+            <Add directory="/usr/include/qt4/QtCore" />
+            <Add directory="/usr/include/qt4/QtGui" />
+            <Add directory="/usr/lib/gcc/i686-linux-gnu/4.6/include" />
+            <Add directory="/usr/lib/gcc/i686-linux-gnu/4.6/include-fixed" />
+            <Add directory="/usr/local/include" />
+         </Compiler>
+         <MakeCommands>
+            <Build command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 teamb_ui" />
+            <CompileFile command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 &quot;$file&quot;" />
+            <Clean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+            <DistClean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+         </MakeCommands>
+      </Target>
+      <Target title="teamb_ui/fast">
+         <Option output="/home/teamb/eod/teamb_ui/bin/teamb_ui" prefix_auto="0" extension_auto="0" />
+         <Option working_dir="/home/teamb/eod/teamb_ui/bin" />
+         <Option object_output="./" />
+         <Option type="1" />
+         <Option compiler="gcc" />
+         <Compiler>
+            <Add option="-DQT_GUI_LIB" />
+            <Add option="-DQT_CORE_LIB" />
+            <Add directory="/home/teamb/eod/qtcreator-build" />
+            <Add directory="/home/teamb/eod/teamb_ui/include" />
+            <Add directory="/home/teamb/eod/teamb_ui/msg_gen/cpp/include" />
+            <Add directory="/opt/ros/fuerte/include" />
+            <Add directory="/opt/ros/fuerte/include/opencv" />
+            <Add directory="/opt/ros/fuerte/stacks/image_common/image_transport/include" />
+            <Add directory="/opt/ros/fuerte/stacks/pluginlib" />
+            <Add directory="/opt/ros/fuerte/stacks/pluginlib/include" />
+            <Add directory="/opt/ros/fuerte/stacks/vision_opencv/cv_bridge/include" />
+            <Add directory="/usr/include" />
+            <Add directory="/usr/include/c++/4.6" />
+            <Add directory="/usr/include/c++/4.6/backward" />
+            <Add directory="/usr/include/c++/4.6/i686-linux-gnu/." />
+            <Add directory="/usr/include/i386-linux-gnu" />
+            <Add directory="/usr/include/qt4" />
+            <Add directory="/usr/include/qt4/QtCore" />
+            <Add directory="/usr/include/qt4/QtGui" />
+            <Add directory="/usr/lib/gcc/i686-linux-gnu/4.6/include" />
+            <Add directory="/usr/lib/gcc/i686-linux-gnu/4.6/include-fixed" />
+            <Add directory="/usr/local/include" />
+         </Compiler>
+         <MakeCommands>
+            <Build command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 teamb_ui/fast" />
+            <CompileFile command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 &quot;$file&quot;" />
+            <Clean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+            <DistClean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+         </MakeCommands>
+      </Target>
+      <Target title="test">
+         <Option working_dir="/home/teamb/eod/qtcreator-build" />
+         <Option type="4" />
+         <MakeCommands>
+            <Build command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 test" />
+            <CompileFile command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 &quot;$file&quot;" />
+            <Clean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+            <DistClean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+         </MakeCommands>
+      </Target>
+      <Target title="test-future">
+         <Option working_dir="/home/teamb/eod/qtcreator-build" />
+         <Option type="4" />
+         <MakeCommands>
+            <Build command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 test-future" />
+            <CompileFile command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 &quot;$file&quot;" />
+            <Clean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+            <DistClean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+         </MakeCommands>
+      </Target>
+      <Target title="test-results">
+         <Option working_dir="/home/teamb/eod/qtcreator-build" />
+         <Option type="4" />
+         <MakeCommands>
+            <Build command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 test-results" />
+            <CompileFile command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 &quot;$file&quot;" />
+            <Clean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+            <DistClean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+         </MakeCommands>
+      </Target>
+      <Target title="test-results-run">
+         <Option working_dir="/home/teamb/eod/qtcreator-build" />
+         <Option type="4" />
+         <MakeCommands>
+            <Build command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 test-results-run" />
+            <CompileFile command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 &quot;$file&quot;" />
+            <Clean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+            <DistClean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+         </MakeCommands>
+      </Target>
+      <Target title="tests">
+         <Option working_dir="/home/teamb/eod/qtcreator-build" />
+         <Option type="4" />
+         <MakeCommands>
+            <Build command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 tests" />
+            <CompileFile command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 &quot;$file&quot;" />
+            <Clean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+            <DistClean command="/usr/bin/make -f &quot;/home/teamb/eod/qtcreator-build/Makefile&quot;  VERBOSE=1 clean" />
+         </MakeCommands>
+      </Target>
+      </Build>
+      <Unit filename="/home/teamb/eod/teamb_ui/src/eodimg.cpp">
+      </Unit>
+      <Unit filename="/home/teamb/eod/teamb_ui/src/main.cpp">
+      </Unit>
+      <Unit filename="/home/teamb/eod/teamb_ui/src/main_window.cpp">
+      </Unit>
+      <Unit filename="/home/teamb/eod/teamb_ui/src/qnode.cpp">
+      </Unit>
+      <Unit filename="/home/teamb/eod/teamb_ui/src/trkimg.cpp">
+      </Unit>
+      <Unit filename="/home/teamb/eod/teamb_ui/resources/images.qrc">
+      </Unit>
+      <Unit filename="/home/teamb/eod/teamb_ui/ui/main_window.ui">
+      </Unit>
+      <Unit filename="/home/teamb/eod/teamb_ui/CMakeLists.txt">
+          <Option virtualFolder="CMake Files\" />
+      </Unit>
+      <Unit filename="/home/teamb/eod/teamb_ui/../../../../opt/ros/fuerte/share/ros/core/rosbuild/rosbuild.cmake">
+          <Option virtualFolder="CMake Files\..\..\..\..\opt\ros\fuerte\share\ros\core\rosbuild\" />
+      </Unit>
+      <Unit filename="/home/teamb/eod/teamb_ui/../../../../opt/ros/fuerte/share/ros/core/rosbuild/private.cmake">
+          <Option virtualFolder="CMake Files\..\..\..\..\opt\ros\fuerte\share\ros\core\rosbuild\" />
+      </Unit>
+      <Unit filename="/home/teamb/eod/teamb_ui/../../../../opt/ros/fuerte/share/ros/core/rosbuild/public.cmake">
+          <Option virtualFolder="CMake Files\..\..\..\..\opt\ros\fuerte\share\ros\core\rosbuild\" />
+      </Unit>
+      <Unit filename="/home/teamb/eod/teamb_ui/../../../../opt/ros/fuerte/share/ros/core/rosbuild/ProcessorCount.cmake">
+          <Option virtualFolder="CMake Files\..\..\..\..\opt\ros\fuerte\share\ros\core\rosbuild\" />
+      </Unit>
+      <Unit filename="/home/teamb/eod/teamb_ui/../../../../opt/ros/fuerte/share/ros/core/rosbuild/rosconfig.cmake">
+          <Option virtualFolder="CMake Files\..\..\..\..\opt\ros\fuerte\share\ros\core\rosbuild\" />
+      </Unit>
+      <Unit filename="/home/teamb/eod/teamb_ui/../../../../opt/ros/fuerte/share/ros/core/rosbuild/FindPkgConfig.cmake">
+          <Option virtualFolder="CMake Files\..\..\..\..\opt\ros\fuerte\share\ros\core\rosbuild\" />
+      </Unit>
+      <Unit filename="/home/teamb/eod/teamb_ui/../../../../opt/ros/fuerte/share/roslang/cmake/roslang.cmake">
+          <Option virtualFolder="CMake Files\..\..\..\..\opt\ros\fuerte\share\roslang\cmake\" />
+      </Unit>
+      <Unit filename="/home/teamb/eod/teamb_ui/../../../../opt/ros/fuerte/share/roscpp/rosbuild/roscpp.cmake">
+          <Option virtualFolder="CMake Files\..\..\..\..\opt\ros\fuerte\share\roscpp\rosbuild\" />
+      </Unit>
+      <Unit filename="/home/teamb/eod/teamb_ui/../../../../opt/ros/fuerte/share/rospy/rosbuild/rospy.cmake">
+          <Option virtualFolder="CMake Files\..\..\..\..\opt\ros\fuerte\share\rospy\rosbuild\" />
+      </Unit>
+      <Unit filename="/home/teamb/eod/teamb_ui/../../../../opt/ros/fuerte/share/roslisp/rosbuild/roslisp.cmake">
+          <Option virtualFolder="CMake Files\..\..\..\..\opt\ros\fuerte\share\roslisp\rosbuild\" />
+      </Unit>
+      <Unit filename="/home/teamb/eod/teamb_ui/../../../../opt/ros/fuerte/stacks/qt_ros/qt_build/qt-ros.cmake">
+          <Option virtualFolder="CMake Files\..\..\..\..\opt\ros\fuerte\stacks\qt_ros\qt_build\" />
+      </Unit>
+      <Unit filename="/home/teamb/eod/teamb_ui/resources/images.qrc">
+          <Option virtualFolder="CMake Files\resources\" />
+      </Unit>
+   </Project>
+</CodeBlocks_project_file>

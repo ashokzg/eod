@@ -34,17 +34,14 @@ QImage eodImg::Mat2QImage(const cv::Mat3b &src)
         return dest;
 }
 
-void eodImg::mousePressEvent(QMouseEvent *ev)
-    {
+void eodImg::mousePressEvent(QMouseEvent *ev){
     dragStart = ev->pos();
     QPointF pt = mapToScene(ev->pos());
     currentlySelecting = true;
     rubber->setGeometry(QRect(dragStart, QSize()));
-    x= ev->pos().x();
-    y = ev->pos().y();
-    //qDebug() <<pt.x()<<pt.y();
+    x= pt.x();
+    y = pt.y();
     rubber->show();
- //rubber->palette()
 }
 
 void eodImg::mouseMoveEvent(QMouseEvent *ev)

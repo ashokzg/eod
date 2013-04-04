@@ -40,12 +40,7 @@ Q_SIGNALS:
 private:
     bool currentlySelecting;
     QGraphicsScene * scene;
-    QPoint mypoint;
-    QPoint start, cur, end;
     QGraphicsPixmapItem qAshImg;
-    QGraphicsEllipseItem *ellipse;
-    cv::VideoCapture vid;
-    cv::Mat curFrame, curFrameRGB;
     QImage Mat2QImage(const cv::Mat3b &src);
     QPoint dragStart;
 
