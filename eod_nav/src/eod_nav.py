@@ -49,6 +49,8 @@ class eodNav:
     self.robotCmdPub.publish(self.vel)
     self.Stopped = False
     self.prevState = self.IDLE
+    self.updateParameters()
+    print "Velocity parameters", self.stLinVel, self.rotLinVel, self.rotAngVel
     #Initialize values
     try:
       img = rospy.wait_for_message("camera/camera_info", CameraInfo, 2.0)
@@ -57,6 +59,11 @@ class eodNav:
     except rospy.ROSException:
       self.imgWidth = 640
       self.imgHeight = 480
+    
+  def updateParameters(self):
+    self.stLinVel = rospy.get_param("~st_lin_vel", 0.5)
+    self.rotLinVel = rospy.get_param("~rot_lin_vel", 0.4)
+    self.rotAngVel = rospy.get_param("~rot_ang_vel", 0.2)    
     
   def spin(self):
     rospy.spin()
@@ -93,6 +100,7 @@ class eodNav:
       self.navState = self.TRACKING_ONLY
       self.robotMove(self.STOP)      
     elif data.data == 3:
+      self.updateParameters()
       self.navState = self.AUTO_MODE
     else:
       #Should not come to this state
@@ -123,18 +131,18 @@ class eodNav:
   
   def robotMove(self, dir):
     if dir == self.STRAIGHT:
-      self.vel.linVelPcent = 0.5
+      self.vel.linVelPcent = self.stLinVel
       self.vel.angVelPcent = 0.0
       rospy.logdebug("Straight")
       #print "Straight"
     elif dir == self.LEFT:
-      self.vel.linVelPcent = 0.4
-      self.vel.angVelPcent = 0.2
+      self.vel.linVelPcent = self.rotLinVel
+      self.vel.angVelPcent = self.rotAngVel
       rospy.logdebug("Left")
       #print "Left"
     elif dir == self.RIGHT:
-      self.vel.linVelPcent = 0.4
-      self.vel.angVelPcent = -0.2
+      self.vel.linVelPcent = self.rotLinVel
+      self.vel.angVelPcent = -self.rotAngVel
       rospy.logdebug("Right")
       #print "Right"
     else:
