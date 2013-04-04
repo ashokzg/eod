@@ -19,7 +19,7 @@ QNode::~QNode() {
 }
 
 bool QNode::init() {
-    ros::init(init_argc,init_argv,"TEAMB_UI");
+    //ros::init(init_argc,init_argv,"foo");
 	if ( ! ros::master::check() ) {
 		return false;
 	}
@@ -32,7 +32,9 @@ bool QNode::init() {
 
     image_transport::ImageTransport it(n);
     sub = it.subscribe("/camera/image_raw", 1, &QNode::imageCallback,this);
+//   sub2 = it.subscribe("/camera/image_raw", 1, &QNode::imageCallback2,this);
     sub2 = it.subscribe("Tracked_Destination", 1, &QNode::imageCallback2,this);
+    rect_msg = n.subscribe("/Destination", 1, &QNode::sendCoord,this);
     start();
 	return true;
 }
@@ -59,6 +61,17 @@ void QNode::publishInfo(int x, int y, int xw, int yw){
     ImgAreaSelected.destWidth= xw;
     ImgAreaSelected.destHeight= yw;
     dest_msg.publish(ImgAreaSelected);
+}
+
+void QNode::sendCoord(const Dest ImgAreaRecvd){
+    int x,y,xw,yw;
+    if (ImgAreaRecvd.destPresent){
+        x = ImgAreaRecvd.destX;
+        y = ImgAreaRecvd.destY;
+        xw = ImgAreaRecvd.destWidth;
+        yw = ImgAreaRecvd.destHeight;
+        Q_EMIT coordRecvd(x,y,xw,yw);
+    }
 }
 
 void QNode::log( const LogLevel &level, const std::string &msg) {
@@ -131,7 +144,6 @@ void QNode::imageCallback(const sensor_msgs::ImageConstPtr& msg)
                     QImage::Format_RGB888
                 );
         (*currImg) = (*qImage).rgbSwapped();
-        Q_EMIT imgUpdated();
 
         Q_EMIT newImg(cv_ptr->image);
 }
@@ -164,7 +176,7 @@ void QNode::imageCallback2(const sensor_msgs::ImageConstPtr& msg)
                 );
         (*currImg) = (*qImage).rgbSwapped();
 
-        Q_EMIT newImg2(cv_ptr->image);
+        Q_EMIT trkImgDisp(cv_ptr->image);
 
 }
 

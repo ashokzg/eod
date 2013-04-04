@@ -16,6 +16,8 @@ class trkImg : public QGraphicsView
 public:
     explicit trkImg(QWidget *parent = 0);
 
+    void input(int,int,int,int);
+    int x, y, xw, yw;
 public Q_SLOTS:
     void updateImage(cv::Mat img);
 
@@ -24,10 +26,10 @@ Q_SIGNALS:
 private:
     QGraphicsScene * scene;
     QGraphicsPixmapItem qAshImg;
-    cv::VideoCapture vid;
-    cv::Mat curFrame, curFrameRGB;
+//    cv::Mat curFrame, curFrameRGB;
     QImage Mat2QImage(const cv::Mat3b &src);
-
+    void paintEvent(QPaintEvent *ev);
+    QGraphicsRectItem* rect;
 };
 
 

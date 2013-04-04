@@ -68,8 +68,9 @@ public Q_SLOTS:
     void setTargetInPic();
     void updateLoggingView();
     void updateNewImg(cv::Mat img);
-    void updateNewImg2(cv::Mat img);
+    void updateTrkImg(cv::Mat img);
     void updateLabel();
+    void paintRectangle(int,int,int,int);
 
   Q_SIGNALS:
     void changemode(int);

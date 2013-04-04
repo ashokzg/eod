@@ -42,10 +42,10 @@ void eodImg::mousePressEvent(QMouseEvent *ev)
     rubber->setGeometry(QRect(dragStart, QSize()));
     x= ev->pos().x();
     y = ev->pos().y();
-    qDebug() <<pt.x()<<pt.y();
+    //qDebug() <<pt.x()<<pt.y();
     rubber->show();
-
-    }
+ //rubber->palette()
+}
 
 void eodImg::mouseMoveEvent(QMouseEvent *ev)
     {

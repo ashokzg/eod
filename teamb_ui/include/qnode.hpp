@@ -55,15 +55,16 @@ public:
     void imageCallback2(const sensor_msgs::ImageConstPtr& msg);
     void shutdown();
 	QImage* getCurrImg();
+	void sendCoord(const Dest ImgAreaRecvd);
 
 
 Q_SIGNALS:
 	void loggingUpdated();
     void rosShutdown();
-    void imgUpdated();
     void updateMode();
     void newImg(cv::Mat img);
-    void newImg2(cv::Mat img);
+    void trkImgDisp(cv::Mat img);
+    void coordRecvd(int,int,int,int);
 
 public Q_SLOTS:
 	void update();
@@ -76,6 +77,7 @@ private:
     ros::Publisher dest_msg;
     ros::Publisher mode_msg;
     ros::Publisher uiStatus_msg;
+    ros::Subscriber rect_msg;
 	image_transport::Subscriber sub;
 	image_transport::Subscriber sub2;
 	QImage *currImg; 

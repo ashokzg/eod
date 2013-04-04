@@ -31,7 +31,8 @@ MainWindow::MainWindow(int argc, char** argv, QWidget *parent)
     QObject::connect(&qnode, SIGNAL(rosShutdown()), this, SLOT(close()));
     QObject::connect(&qnode, SIGNAL(loggingUpdated()), this, SLOT(updateLoggingView()));
     QObject::connect(&qnode, SIGNAL(newImg(cv::Mat)), this, SLOT(updateNewImg(cv::Mat)));
-    QObject::connect(&qnode, SIGNAL(newImg2(cv::Mat)), this, SLOT(updateNewImg2(cv::Mat)));
+    QObject::connect(&qnode, SIGNAL(trkImgDisp(cv::Mat)), this, SLOT(updateTrkImg(cv::Mat)));
+    QObject::connect(&qnode, SIGNAL(coordRecvd(int,int,int,int)), this, SLOT(paintRectangle(int,int,int,int)));
 
     //Sending Mode change to ROS to be sent to robot
     QObject::connect(this, SIGNAL(updateRos()), &qnode, SLOT(update()));
@@ -83,9 +84,9 @@ int MainWindow::MsgWithOKCancel(const QString msg){
 
 void MainWindow::setTargetInPic()
 {
-    qDebug()<<"XW";
-    qDebug()<<ui.graphicsView->xw;
-    qDebug()<<ui.graphicsView->yw;
+    //qDebug()<<"XW";
+    //qDebug()<<ui.graphicsView->xw;
+    //qDebug()<<ui.graphicsView->yw;
 
         if(curr_state == idle_manual){
             curr_state = tracking;
@@ -114,9 +115,14 @@ void MainWindow::updateNewImg(cv::Mat img)
     ui.graphicsView->updateImage(img);
 }
 
-void MainWindow::updateNewImg2(cv::Mat img)
+void MainWindow::updateTrkImg(cv::Mat img)
 {   ui.graphicsView_2->resize(img.cols, img.rows);
     ui.graphicsView_2->updateImage(img);
+
+}
+
+void MainWindow::paintRectangle(int x, int y, int xw, int yw){
+    ui.graphicsView_2->input(x,y,xw,yw);
 }
 
 void MainWindow::updateLabel()
