@@ -48,6 +48,7 @@ class eodNav:
     self.navStatePub.publish(self.navState)
     self.robotCmdPub.publish(self.vel)
     self.Stopped = False
+    self.prevState = self.IDLE
     #Initialize values
     try:
       img = rospy.wait_for_message("camera/camera_info", CameraInfo, 2.0)
@@ -63,15 +64,16 @@ class eodNav:
   def ultraSound(self, data):
     #Smoothes the ultrasonic data with a gaussian filter
     distance = self.processUltrasound(data)
-    print distance, self.navState
-    if distance < 0.7:
+    print distance, self.navState, self.prevState, self.Stopped
+    self.navStatePub.publish(self.navState)
+    if distance < 0.7 and self.navState == self.AUTO_MODE:
       print "STOPPING"
       self.robotMove(self.STOP)
       self.prevState = self.navState      
-      self.navState = self.MANUAL_MODE   
+      self.navState = self.ROBOT_LOST   
       self.Stopped = True
-    elif distance > 0.8 and self.Stopped == True:
-      self.navState = self.AUTO_MODE
+    elif distance > 0.8 and self.Stopped == True and self.navState == self.ROBOT_LOST:
+      self.navState = self.prevState
       self.prevState = self.MANUAL_MODE
       self.Stopped = False
     
@@ -106,10 +108,10 @@ class eodNav:
         cx = data.destX + data.destWidth/2
         cy = data.destY + data.destHeight/2
         #If the destination is slipping towards the left, turn left
-        if cx < (self.imgWidth/2 - 20):
+        if cx < (self.imgWidth/2 - 50):
           self.robotMove(self.LEFT)
         #If the destination is slipping towards the right, turn right
-        elif cx > (self.imgWidth/2 + 20):
+        elif cx > (self.imgWidth/2 + 50):
           self.robotMove(self.RIGHT)
         #We are good to zip towards the destination
         else:
@@ -121,18 +123,18 @@ class eodNav:
   
   def robotMove(self, dir):
     if dir == self.STRAIGHT:
-      self.vel.linVelPcent = 0.5
+      self.vel.linVelPcent = 0.3
       self.vel.angVelPcent = 0.0
       rospy.logdebug("Straight")
       #print "Straight"
     elif dir == self.LEFT:
-      self.vel.linVelPcent = 0.4
-      self.vel.angVelPcent = 0.1
+      self.vel.linVelPcent = 0.2
+      self.vel.angVelPcent = 0.05
       rospy.logdebug("Left")
       #print "Left"
     elif dir == self.RIGHT:
-      self.vel.linVelPcent = 0.4
-      self.vel.angVelPcent = -0.1
+      self.vel.linVelPcent = 0.2
+      self.vel.angVelPcent = -0.05
       rospy.logdebug("Right")
       #print "Right"
     else:
