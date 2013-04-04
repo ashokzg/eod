@@ -71,7 +71,7 @@ void QNode::sendCoord(const Dest ImgAreaRecvd){
         y = ImgAreaRecvd.destY;
         xw = ImgAreaRecvd.destWidth;
         yw = ImgAreaRecvd.destHeight;
-        qDebug()<<"Img Coord Recvd"<<x<<y<<xw<<yw;
+        //qDebug()<<"Img Coord Recvd"<<x<<y<<xw<<yw;
         Q_EMIT coordRecvd(destPresent,x,y,xw,yw);
 }
 

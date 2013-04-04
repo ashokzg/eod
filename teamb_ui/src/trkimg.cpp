@@ -29,7 +29,6 @@ QImage trkImg::Mat2QImage(const cv::Mat3b &src)
 
 
 void trkImg::input(bool val,int x, int y, int xw, int yw){
-    qDebug()<<x<<y;
 
     if(val){
         rubber->setGeometry(x,y,xw,yw);

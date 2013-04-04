@@ -47,6 +47,7 @@ class eodNav:
     
     self.navStatePub.publish(self.navState)
     self.robotCmdPub.publish(self.vel)
+    self.Stopped = False
     #Initialize values
     try:
       img = rospy.wait_for_message("camera/camera_info", CameraInfo, 2.0)
@@ -62,15 +63,17 @@ class eodNav:
   def ultraSound(self, data):
     #Smoothes the ultrasonic data with a gaussian filter
     distance = self.processUltrasound(data)
-    #print distance
-    print self.navState
-    if distance < 0.15:
+    print distance, self.navState
+    if distance < 0.7:
+      print "STOPPING"
       self.robotMove(self.STOP)
       self.prevState = self.navState      
-      self.navState = self.MANUAL_MODE
-    elif distance > 0.5 and self.navState == self.MANUAL_MODE:# and self.prevState == self.AUTO_MODE:
-      self.navState = self.prevState
+      self.navState = self.MANUAL_MODE   
+      self.Stopped = True
+    elif distance > 0.8 and self.Stopped == True:
+      self.navState = self.AUTO_MODE
       self.prevState = self.MANUAL_MODE
+      self.Stopped = False
     
   def userDest(self, data):
     if data.destPresent == True:
@@ -80,16 +83,20 @@ class eodNav:
   def uiState(self, data):
     if data.data == 0:
       self.navState = self.IDLE
+      self.robotMove(self.STOP)      
     elif data.data == 1:
       self.navState = self.MANUAL_MODE
+      self.robotMove(self.STOP)
     elif data.data == 2:
       self.navState = self.TRACKING_ONLY
+      self.robotMove(self.STOP)      
     elif data.data == 3:
       self.navState = self.AUTO_MODE
     else:
       #Should not come to this state
       print "This is not good! Unknown state from UI"
       self.navState = self.IDLE
+      self.robotMove(self.STOP)      
   
   def trackedDest(self, data):
     #print "tracking in state", self.navState 
@@ -114,17 +121,17 @@ class eodNav:
   
   def robotMove(self, dir):
     if dir == self.STRAIGHT:
-      self.vel.linVelPcent = 0.8
+      self.vel.linVelPcent = 0.5
       self.vel.angVelPcent = 0.0
       rospy.logdebug("Straight")
       #print "Straight"
     elif dir == self.LEFT:
-      self.vel.linVelPcent = 0.5
+      self.vel.linVelPcent = 0.4
       self.vel.angVelPcent = 0.1
       rospy.logdebug("Left")
       #print "Left"
     elif dir == self.RIGHT:
-      self.vel.linVelPcent = 0.5
+      self.vel.linVelPcent = 0.4
       self.vel.angVelPcent = -0.1
       rospy.logdebug("Right")
       #print "Right"
