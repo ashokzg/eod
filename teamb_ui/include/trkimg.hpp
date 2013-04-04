@@ -6,18 +6,18 @@
 #include <QtGui>
 #include <QGraphicsView>
 #include <QGraphicsScene>
-#include <QRubberBand>
 #include <QPointF>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include "rbrband.hpp"
 
 class trkImg : public QGraphicsView
 {
     Q_OBJECT
 public:
     explicit trkImg(QWidget *parent = 0);
-    QRubberBand* rubber;
+    rbrBand* rubber;
     void input(bool,int,int,int,int);
 
 public Q_SLOTS:

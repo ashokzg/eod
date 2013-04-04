@@ -2,7 +2,6 @@
 #define EODIMG_H
 
 #include <QLabel>
-#include <QRubberBand>
 #include <QPointF>
 #include <QMouseEvent>
 #include <QMainWindow>
@@ -15,6 +14,7 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include "rbrband.hpp"
 
 class eodImg : public QGraphicsView
 {
@@ -22,15 +22,12 @@ class eodImg : public QGraphicsView
 public:
     explicit eodImg(QWidget *parent = 0);
     int x,y,xw,yw;
-    QRubberBand* rubber;
+    rbrBand* rubber;
     QRect getImgSelection(){
     return rubber->geometry();}
     void mousePressEvent(QMouseEvent * e);
     void mouseMoveEvent(QMouseEvent * e);
     void mouseReleaseEvent(QMouseEvent * e);
-
-    void setImgSelection(QRect r){
-    rubber->setGeometry(r);}
 
 public Q_SLOTS:
     void updateImage(cv::Mat img);

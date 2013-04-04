@@ -1,8 +1,9 @@
 #include "eodimg.hpp"
 #include "main_window.hpp"
+#include "rbrband.hpp"
 
 eodImg::eodImg(QWidget *parent) :
-    QGraphicsView(parent),rubber(new QRubberBand(QRubberBand::Rectangle, this))
+    QGraphicsView(parent),rubber(new rbrBand(QRubberBand::Rectangle, this))
 {
     x = 0;
     y = 0;
@@ -45,32 +46,22 @@ void eodImg::mousePressEvent(QMouseEvent *ev){
 }
 
 void eodImg::mouseMoveEvent(QMouseEvent *ev)
-    {
+{
     if (ev->buttons() & Qt::LeftButton)
         rubber->setGeometry(QRect(dragStart,ev->pos()).normalized());
+    rubber->palette.setBrush(QPalette::Foreground, QBrush(Qt::yellow));
 
-    QPalette palette;
-    palette.setBrush(QPalette::Foreground, QBrush(Qt::red));
-    rubber->setPalette(palette);
-
-    }
+}
 
 void eodImg::mouseReleaseEvent(QMouseEvent *ev)
-    {
+{
     if(currentlySelecting == true)
     {
-
-
-    QPalette palette;
-    palette.setBrush(QPalette::Window, QBrush(Qt::green));
-
-
-    rubber->setPalette(palette);
-
+    rubber->palette.setBrush(QPalette::Foreground, QBrush(Qt::blue));
     rubber->show();
     xw = ev->pos().x()-x;
     yw = ev->pos().y()-y;
 
     }
-    }
+}
 
