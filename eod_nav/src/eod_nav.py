@@ -123,18 +123,18 @@ class eodNav:
   
   def robotMove(self, dir):
     if dir == self.STRAIGHT:
-      self.vel.linVelPcent = 0.3
+      self.vel.linVelPcent = 0.5
       self.vel.angVelPcent = 0.0
       rospy.logdebug("Straight")
       #print "Straight"
     elif dir == self.LEFT:
-      self.vel.linVelPcent = 0.2
-      self.vel.angVelPcent = 0.05
+      self.vel.linVelPcent = 0.4
+      self.vel.angVelPcent = 0.2
       rospy.logdebug("Left")
       #print "Left"
     elif dir == self.RIGHT:
-      self.vel.linVelPcent = 0.2
-      self.vel.angVelPcent = -0.05
+      self.vel.linVelPcent = 0.4
+      self.vel.angVelPcent = -0.2
       rospy.logdebug("Right")
       #print "Right"
     else:
