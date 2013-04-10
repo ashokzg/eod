@@ -1,0 +1,12 @@
+<!--xml-->
+<launch>
+    <include file="$(find monoCam)/launch/monoCam.launch" />
+    <!--node pkg="teamb_ui" type="teamb_ui" name="UI" output="screen" /-->
+    <node pkg="OpenTLD" type="destinationTLD" name="OpenTLD" output="screen" />
+    <node pkg="eod_nav" type="eod_nav.py" name="EOD_Navigation" output="screen">
+      <param name="st_lin_vel" type="double" value="0.4" />
+      <param name="rot_lin_vel" type="double" value="0.4" />
+      <param name="rot_ang_vel" type="double" value="0.2" />            
+    </node>
+    <node pkg="rosserial_python" type="serial_node.py" name="Motor_Ctrl" args="/dev/ttyACM0" />
+</launch>

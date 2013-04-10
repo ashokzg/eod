@@ -82,7 +82,7 @@
        <attribute name="title">
         <string>Tracking Video</string>
        </attribute>
-       <widget class="eodImg" name="graphicsView_2">
+       <widget class="trkImg" name="graphicsView_2">
         <property name="geometry">
          <rect>
           <x>0</x>
@@ -392,7 +392,7 @@ TARGET</string>
          </rect>
         </property>
         <property name="text">
-         <string>Enable Manual Mode</string>
+         <string>Enable Joystick</string>
         </property>
        </widget>
        <widget class="QWidget" name="layoutWidget">
@@ -503,6 +503,11 @@ TARGET</string>
    <extends>QGraphicsView</extends>
    <header>eodimg.hpp</header>
   </customwidget>
+  <customwidget>
+   <class>trkImg</class>
+   <extends>QGraphicsView</extends>
+   <header>trkimg.hpp</header>
+  </customwidget>
  </customwidgets>
  <resources>
   <include location="../resources/images.qrc"/>
@@ -531,8 +536,8 @@ TARGET</string>
    <slot>close()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1085</x>
-     <y>753</y>
+     <x>881</x>
+     <y>672</y>
     </hint>
     <hint type="destinationlabel">
      <x>469</x>
@@ -547,8 +552,8 @@ TARGET</string>
    <slot>resetToIdleManual()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>970</x>
-     <y>117</y>
+     <x>859</x>
+     <y>139</y>
     </hint>
     <hint type="destinationlabel">
      <x>745</x>
@@ -563,8 +568,8 @@ TARGET</string>
    <slot>connectToROS()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>822</x>
-     <y>94</y>
+     <x>711</x>
+     <y>114</y>
     </hint>
     <hint type="destinationlabel">
      <x>742</x>
@@ -579,8 +584,8 @@ TARGET</string>
    <slot>setTargetInPic()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>872</x>
-     <y>145</y>
+     <x>711</x>
+     <y>147</y>
     </hint>
     <hint type="destinationlabel">
      <x>591</x>
@@ -595,8 +600,8 @@ TARGET</string>
    <slot>confirmTracking()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>788</x>
-     <y>164</y>
+     <x>713</x>
+     <y>181</y>
     </hint>
     <hint type="destinationlabel">
      <x>742</x>
@@ -611,8 +616,8 @@ TARGET</string>
    <slot>toggleManualMode(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>893</x>
-     <y>207</y>
+     <x>749</x>
+     <y>210</y>
     </hint>
     <hint type="destinationlabel">
      <x>739</x>

@@ -11,6 +11,7 @@
 #include <ros/network.h>
 
 #include <std_msgs/String.h>
+#include <std_msgs/Int32.h>
 #include <std_msgs/Empty.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/image_encodings.h>
@@ -52,34 +53,37 @@ public:
 	void modefbFromRobot(const std_msgs::String::ConstPtr& msg);
     void imageCallback(const sensor_msgs::ImageConstPtr& msg);
     void imageCallback2(const sensor_msgs::ImageConstPtr& msg);
-	void timercallback(const ros::TimerEvent&);
     void shutdown();
 	QImage* getCurrImg();
+	void sendCoord(const Dest ImgAreaRecvd);
 
 
 Q_SIGNALS:
 	void loggingUpdated();
     void rosShutdown();
-    void imgUpdated();
+    void updateMode();
     void newImg(cv::Mat img);
-    void newImg2(cv::Mat img);
+    void trkImgDisp(cv::Mat img);
+    void coordRecvd(bool,int,int,int,int);
 
 public Q_SLOTS:
-    void modeCallback(int);
 	void update();
     void publishInfo(int,int,int,int);
+    void publishState(int);
     
 private:
 	int init_argc;
 	char** init_argv;
     ros::Publisher dest_msg;
-    ros::Publisher info;
-    ros::Publisher status;
-    ros::Subscriber robotStatus;
+    ros::Publisher mode_msg;
+    ros::Publisher uiStatus_msg;
+    ros::Subscriber rect_msg;
 	image_transport::Subscriber sub;
 	image_transport::Subscriber sub2;
 	QImage *currImg; 
 	QStringListModel logging_model;
+    Dest ImgAreaSelected;
+    std_msgs::Int32 rosState;
 };
 
 }  // namespace trial

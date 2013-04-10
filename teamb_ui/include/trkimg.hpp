@@ -1,33 +1,24 @@
-#ifndef EODIMG_H
-#define EODIMG_H
+#ifndef TRKIMG_H
+#define TRKIMG_H
 
-#include <QLabel>
-#include <QPointF>
-#include <QMouseEvent>
 #include <QMainWindow>
 #include <QtCore>
 #include <QtGui>
 #include <QGraphicsView>
 #include <QGraphicsScene>
-#include <QGraphicsEllipseItem>
-#include <QMouseEvent>
+#include <QPointF>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include "rbrband.hpp"
 
-class eodImg : public QGraphicsView
+class trkImg : public QGraphicsView
 {
     Q_OBJECT
 public:
-    explicit eodImg(QWidget *parent = 0);
-    int x,y,xw,yw;
+    explicit trkImg(QWidget *parent = 0);
     rbrBand* rubber;
-    QRect getImgSelection(){
-    return rubber->geometry();}
-    void mousePressEvent(QMouseEvent * e);
-    void mouseMoveEvent(QMouseEvent * e);
-    void mouseReleaseEvent(QMouseEvent * e);
+    void input(bool,int,int,int,int);
 
 public Q_SLOTS:
     void updateImage(cv::Mat img);
@@ -35,11 +26,10 @@ public Q_SLOTS:
 Q_SIGNALS:
 
 private:
-    bool currentlySelecting;
     QGraphicsScene * scene;
     QGraphicsPixmapItem qAshImg;
     QImage Mat2QImage(const cv::Mat3b &src);
-    QPoint dragStart;
+    QGraphicsRectItem* rect;
 
 };
 

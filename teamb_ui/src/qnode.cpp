@@ -2,7 +2,6 @@
 #include "eodimg.hpp"
 
 namespace teamb_ui {
-Dest ImgAreaSelected;
 
 QNode::QNode(int argc, char** argv ) :
 	init_argc(argc),
@@ -20,20 +19,21 @@ QNode::~QNode() {
 }
 
 bool QNode::init() {
-    ros::init(init_argc,init_argv,"TEAMB_UI");
+    ros::init(init_argc,init_argv,"foo");
 	if ( ! ros::master::check() ) {
 		return false;
 	}
     ros::start();
 	ros::NodeHandle n;
 
-    info = n.advertise<std_msgs::String>("Info", 1000);
-    status = n.advertise<std_msgs::String>("uiStatus", 1000);
+    mode_msg = n.advertise<std_msgs::Int32>("/Mode", 1000);
+    uiStatus_msg = n.advertise<std_msgs::Int32>("/UiStatus", 1000);
     dest_msg = n.advertise<Dest>("/UserDestination", 1000);
 
     image_transport::ImageTransport it(n);
-    sub = it.subscribe("/camera/image_raw", 1, &QNode::imageCallback,this);
-    sub2 = it.subscribe("Tracked_Destination", 1, &QNode::imageCallback2,this);
+    sub = it.subscribe("/camera/image_raw", 1, &QNode::imageCallback,this,image_transport::TransportHints("compressed"));
+    sub2 = it.subscribe("Tracked_Destination", 1, &QNode::imageCallback2,this,image_transport::TransportHints("compressed"));
+    rect_msg = n.subscribe("/destination", 1, &QNode::sendCoord,this);
     start();
 	return true;
 }
@@ -46,7 +46,6 @@ void QNode::run() {
 		std::stringstream ss;
         ss << "System Check";
 		msg.data = ss.str();
-        info.publish(msg);
         log(Info,std::string("Connected to ROS: ")+msg.data);
 		loop_rate.sleep();
 	}
@@ -60,9 +59,19 @@ void QNode::publishInfo(int x, int y, int xw, int yw){
     ImgAreaSelected.destY= y;
     ImgAreaSelected.destWidth= xw;
     ImgAreaSelected.destHeight= yw;
-    //qDebug() <<x<<y;
-    //qDebug() <<xw<<yw;
     dest_msg.publish(ImgAreaSelected);
+}
+
+void QNode::sendCoord(const Dest ImgAreaRecvd){
+        bool destPresent;
+        int x,y,xw,yw;
+        destPresent = ImgAreaRecvd.destPresent;
+        x = ImgAreaRecvd.destX;
+        y = ImgAreaRecvd.destY;
+        xw = ImgAreaRecvd.destWidth;
+        yw = ImgAreaRecvd.destHeight;
+        //qDebug()<<"Img Coord Recvd"<<x<<y<<xw<<yw;
+        Q_EMIT coordRecvd(destPresent,x,y,xw,yw);
 }
 
 void QNode::log( const LogLevel &level, const std::string &msg) {
@@ -72,7 +81,7 @@ void QNode::log( const LogLevel &level, const std::string &msg) {
 	switch ( level ) {
 		case(Debug) : {
 				ROS_DEBUG_STREAM(msg);
-                logging_model_msg << "[DEBUG] [" << ros::Time::now().isSystemTime() << "]: " << msg;
+                logging_model_msg << "[DEBUG]" << msg;
 				break;
 		}
 		case(Info) : {
@@ -82,17 +91,17 @@ void QNode::log( const LogLevel &level, const std::string &msg) {
 		}
 		case(Warn) : {
 				ROS_WARN_STREAM(msg);
-                logging_model_msg << "[WARNING] [" << ros::Time::now().isSystemTime() << "]: " << msg;
+                logging_model_msg << "[WARNING]" << msg;
 				break;
 		}
 		case(Error) : {
 				ROS_ERROR_STREAM(msg);
-                logging_model_msg << "[ERROR] [" << ros::Time::now().isSystemTime() << "]: " << msg;
+                logging_model_msg << "[ERROR]" << msg;
 				break;
 		}
 		case(Fatal) : {
 				ROS_FATAL_STREAM(msg);
-                logging_model_msg << "[FATAL] [" << ros::Time::now().isSystemTime() << "]: " << msg;
+                logging_model_msg << "[FATAL]" << msg;
 				break;
 		}
 	}
@@ -135,10 +144,8 @@ void QNode::imageCallback(const sensor_msgs::ImageConstPtr& msg)
                     QImage::Format_RGB888
                 );
         (*currImg) = (*qImage).rgbSwapped();
-        Q_EMIT imgUpdated();
 
         Q_EMIT newImg(cv_ptr->image);
-        //qDebug() <<"Image got";
 }
 
 void QNode::imageCallback2(const sensor_msgs::ImageConstPtr& msg)
@@ -169,7 +176,7 @@ void QNode::imageCallback2(const sensor_msgs::ImageConstPtr& msg)
                 );
         (*currImg) = (*qImage).rgbSwapped();
 
-        Q_EMIT newImg2(cv_ptr->image);
+        Q_EMIT trkImgDisp(cv_ptr->image);
 
 }
 
@@ -178,31 +185,17 @@ QImage* QNode::getCurrImg(){
 }
 
 
-void QNode::modeCallback(int state)
+void QNode::publishState(int state)
 {
-    std_msgs::String msg;
-    std::stringstream ss;
-
-    if ( state == 1 ) {
-        ss << "Manual Mode: Please use joystick to control robot.";
-    } else if(state == 0) {
-        ss << "Autonomous Mode";
-    }
-    msg.data = ss.str();
-    log(Info,msg.data);
-    status.publish(msg);
-}
-
-void QNode::timercallback(const ros::TimerEvent& event){
-
-    ros::spinOnce();
-
+    rosState.data = state;
+    uiStatus_msg.publish(rosState);
 }
 
 void QNode::update()
 {
     ros::spinOnce();
 }
+
 
 void QNode::modefbFromRobot(const std_msgs::String::ConstPtr& msg)
 {

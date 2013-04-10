@@ -1,9 +1,14 @@
 #include "eodimg.hpp"
 #include "main_window.hpp"
+#include "rbrband.hpp"
 
 eodImg::eodImg(QWidget *parent) :
-    QGraphicsView(parent),rubber(new QRubberBand(QRubberBand::Rectangle, this))
+    QGraphicsView(parent),rubber(new rbrBand(QRubberBand::Rectangle, this))
 {
+    x = 0;
+    y = 0;
+    xw = 0;
+    yw = 0;
     rubber->setMouseTracking(true);
     currentlySelecting = false;
     scene = new QGraphicsScene(this);
@@ -30,72 +35,33 @@ QImage eodImg::Mat2QImage(const cv::Mat3b &src)
         return dest;
 }
 
-void eodImg::mousePressEvent(QMouseEvent *ev)
-    {
+void eodImg::mousePressEvent(QMouseEvent *ev){
     dragStart = ev->pos();
     QPointF pt = mapToScene(ev->pos());
     currentlySelecting = true;
     rubber->setGeometry(QRect(dragStart, QSize()));
-    x= ev->pos().x();
-    y = ev->pos().y();
-    qDebug() <<pt.x()<<pt.y();
+    x= pt.x();
+    y = pt.y();
     rubber->show();
-
-    }
+}
 
 void eodImg::mouseMoveEvent(QMouseEvent *ev)
-    {
+{
     if (ev->buttons() & Qt::LeftButton)
         rubber->setGeometry(QRect(dragStart,ev->pos()).normalized());
+        rubber->palette.setBrush(QPalette::Foreground, QBrush(Qt::yellow));
 
-    QPalette palette;
-    palette.setBrush(QPalette::Foreground, QBrush(Qt::red));
-    rubber->setPalette(palette);
-
-    }
+}
 
 void eodImg::mouseReleaseEvent(QMouseEvent *ev)
-    {
+{
     if(currentlySelecting == true)
     {
-
-
-    QPalette palette;
-    palette.setBrush(QPalette::Window, QBrush(Qt::green));
-
-
-    rubber->setPalette(palette);
-
+    rubber->palette.setBrush(QPalette::Foreground, QBrush(Qt::blue));
     rubber->show();
     xw = ev->pos().x()-x;
     yw = ev->pos().y()-y;
-    //qDebug() <<xw<<yw;
-
-    QMessageBox msgBox;
-    msgBox.setText("Are you sure of the selection?");
-    msgBox.setInformativeText("Do you want to go ahead or reselect?");
-    msgBox.setStandardButtons(QMessageBox::Apply | QMessageBox::Cancel);
-    msgBox.setEscapeButton(QMessageBox::Close);
-    msgBox.setDefaultButton(QMessageBox::Apply);
-    ret = msgBox.exec();
-    //qDebug() <<ret;
-    if(ret== 0x02000000)
-    {
-        QMessageBox msgBox2;
-        msgBox2.setText("Please press Set Target to confirm ROI");
-        msgBox2.setStandardButtons(QMessageBox::Ok);
-        msgBox2.exec();
-    }
-    else
-//    if(ret!= 0x02000000)
-    {
-        QMessageBox msgBox2;
-        msgBox2.setText("Please re-select target!");
-        msgBox2.exec();
-        rubber->hide();
-    }
-
 
     }
-    }
+}
 
