@@ -1,3 +1,5 @@
+Mechanical System
+-----------------
 Suspension Improve  
 Stereo Mount  
 Ultrasound Mount  
@@ -7,15 +9,20 @@ Ultrasound Sensing - Filter Improve
 Battery Checking Circuitry  
 
 UI Changes  
+--------------  
 Battery Status Implementation  
 Logging Scroll  
 Joystick Control  
 Manual control via buttons on Keyboard / Mouse  
 Image - Compressed  
+Thicker rectange for tracking
 
+Software
+----------------
 Navigation  
 Ramping Up and Down  
 Tracking Re-search  
 
 Communication  
+-----------------
 Router- Test  
