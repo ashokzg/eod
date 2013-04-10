@@ -131,26 +131,25 @@ class eodNav:
   
   def robotMove(self, dir):
     if dir == self.STRAIGHT:
-      self.vel.linVelPcent = self.stLinVel
-      self.vel.angVelPcent = 0.0
+      velRamp = rampUp(0,self.stLinVel, 0.05)
+      for vel_steps in velRamp:
+          self.vel.linVelPcent = vel_steps
+          self.vel.angVelPcent = 0.0
+          self.robotCmdPub.publish(self.vel)
       rospy.logdebug("Straight")
-      #print "Straight"
     elif dir == self.LEFT:
       self.vel.linVelPcent = self.rotLinVel
       self.vel.angVelPcent = self.rotAngVel
       rospy.logdebug("Left")
-      #print "Left"
     elif dir == self.RIGHT:
       self.vel.linVelPcent = self.rotLinVel
       self.vel.angVelPcent = -self.rotAngVel
       rospy.logdebug("Right")
-      #print "Right"
     else:
       self.vel.linVelPcent = 0.0
       self.vel.angVelPcent = 0.0
       rospy.logdebug("Stop")
-      #print "STOP"
-    self.robotCmdPub.publish(self.vel)        
+    self.robotCmdPub.publish(self.vel)
 
   def processUltrasound(self, data): 
     self.val = numpy.append(self.val, data.range)
@@ -175,6 +174,18 @@ class eodNav:
       w=eval('numpy.'+window+'(window_len)')
     y=numpy.convolve(w/w.sum(),s,mode='valid')
     return y
+    
+  def rampUp(x, y, jump):
+    while x < y:
+        yield x
+        x += jump
+
+  def rampDown(x, y, jump):
+    while x < y:
+        yield x
+        x -= jump
+
+
   
 if __name__ == "__main__":
   print "came here"

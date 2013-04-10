@@ -19,7 +19,7 @@ QNode::~QNode() {
 }
 
 bool QNode::init() {
-    //ros::init(init_argc,init_argv,"foo");
+    ros::init(init_argc,init_argv,"foo");
 	if ( ! ros::master::check() ) {
 		return false;
 	}
@@ -31,9 +31,8 @@ bool QNode::init() {
     dest_msg = n.advertise<Dest>("/UserDestination", 1000);
 
     image_transport::ImageTransport it(n);
-    sub = it.subscribe("/camera/image_raw", 1, &QNode::imageCallback,this);
-//   sub2 = it.subscribe("/camera/image_raw", 1, &QNode::imageCallback2,this);
-    sub2 = it.subscribe("Tracked_Destination", 1, &QNode::imageCallback2,this);
+    sub = it.subscribe("/camera/image_raw", 1, &QNode::imageCallback,this,image_transport::TransportHints("compressed"));
+    sub2 = it.subscribe("Tracked_Destination", 1, &QNode::imageCallback2,this,image_transport::TransportHints("compressed"));
     rect_msg = n.subscribe("/destination", 1, &QNode::sendCoord,this);
     start();
 	return true;
