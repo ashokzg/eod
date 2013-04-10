@@ -1,0 +1,18 @@
+<package>
+  <description brief="eod_teleop">
+
+     eod_teleop
+
+  </description>
+  <author>Ashok</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/eod_teleop</url>
+  <depend package="rospy"/>
+  <depend package="joy"/>
+  <depend package="geometry_msgs"/>
+  <depend package="eod_nav"/>
+  <depend package="sensor_msgs"/>
+</package>
+
+
