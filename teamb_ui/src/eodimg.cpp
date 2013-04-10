@@ -49,7 +49,7 @@ void eodImg::mouseMoveEvent(QMouseEvent *ev)
 {
     if (ev->buttons() & Qt::LeftButton)
         rubber->setGeometry(QRect(dragStart,ev->pos()).normalized());
-    rubber->palette.setBrush(QPalette::Foreground, QBrush(Qt::yellow));
+        rubber->palette.setBrush(QPalette::Foreground, QBrush(Qt::yellow));
 
 }
 
