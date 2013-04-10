@@ -18,12 +18,12 @@ def joy_callback(data):
     cmd_vel.linVelPcent = 0
     cmd_vel.angVelPcent = 0
     if manual[0] == True:
-        print "manual"
         count[0] = 0
         #Only if dead man's button is pressed take any action
         if data.buttons[4] == 1:
-            cmd_vel.linVelPcent = data.axes[1]
-            cmd_vel.angVelPcent = data.axes[0]/2
+            print data.buttons[5] + 1, data.axes[4]
+            cmd_vel.linVelPcent = (data.buttons[5] + 1)*data.axes[4]/2
+            cmd_vel.angVelPcent = (data.buttons[5] + 1)*data.axes[3]/2
         robotCmdPub.publish(cmd_vel)
     #If RED button and the deadman's switch is pressed, stop the robot
     if data.buttons[1] == 1 and data.buttons[4] == 1:
