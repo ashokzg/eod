@@ -20,7 +20,7 @@
 #include "DualVNH5019MotorShield.h"
 //Full Speed = 400 : 0-255 for Analog Write mapped to 400
 #define FS 400
-#define ULTRA_PIN A5
+#define ULTRA_PIN A0
 
 DualVNH5019MotorShield md;
 
