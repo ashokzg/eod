@@ -3,6 +3,7 @@ import rospy
 import roslib; roslib.load_manifest('eod_nav')
 import numpy
 from sensor_msgs.msg import CameraInfo, Range
+from eod_nav.msg import Ultrasonic
 
 count = 0
 
@@ -11,7 +12,7 @@ class temp:
   count = 0
   def ultrasound(self, data):
     self.count += 1    
-    self.val = numpy.append(self.val, data.range)
+    self.val = numpy.append(self.val, data.ultra_left)
     self.val = numpy.delete(self.val, 1)  
     #print val
     if self.count > 11:
@@ -79,5 +80,5 @@ class temp:
 if __name__ == "__main__":  
   rospy.init_node("testultra")  
   a = temp()
-  rospy.Subscriber("ultrasound", Range, a.ultrasound)
+  rospy.Subscriber("ultrasound", Ultrasonic, a.ultrasound)
   rospy.spin()

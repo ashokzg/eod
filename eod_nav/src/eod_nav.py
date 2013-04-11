@@ -5,7 +5,7 @@ import roslib; roslib.load_manifest('eod_nav')
 from teamb_ui.msg import Dest
 import std_msgs.msg
 from sensor_msgs.msg import CameraInfo, Range
-from eod_nav.msg import Velocity
+from eod_nav.msg import Velocity, Ultrasonic
 
 import numpy
 
@@ -24,15 +24,22 @@ class eodNav:
   RIGHT = 2
   STOP = 3
   
+  #Ultrasonic sensors
+  UL = 0
+  UC = 1
+  UR = 2
+  
   #Used for smoothing the ultrasonic
-  val = numpy.zeros(15)  
+  val_c = numpy.zeros(15)  
+  val_r = numpy.zeros(15)  
+  val_l = numpy.zeros(15)      
   
   def __init__(self):
     rospy.init_node("eod_navigation")
     self.navState = self.IDLE
     self.vel = Velocity()
     self.vel.linVelPcent = 0.0
-    self.vel.angVelPcent = 0.0
+    self.vel.angVelPcent = 0.0    
     print "Came to init"
     #Init the subscribers    
     #    UI
@@ -40,7 +47,7 @@ class eodNav:
     rospy.Subscriber("UiStatus", std_msgs.msg.Int32, self.uiState)
     #    Tracker
     rospy.Subscriber("destination", Dest, self.trackedDest)
-    rospy.Subscriber("ultrasound", Range, self.ultraSound)
+    rospy.Subscriber("ultrasound", Ultrasonic, self.ultraSound)
     #Init the publishers
     self.navStatePub = rospy.Publisher('Nav_State', std_msgs.msg.UInt32)
     self.robotCmdPub = rospy.Publisher('cmd_vel', Velocity)
@@ -70,16 +77,19 @@ class eodNav:
   
   def ultraSound(self, data):
     #Smoothes the ultrasonic data with a gaussian filter
+    #Distance is a list of ultrasonic [left, center, right]
     distance = self.processUltrasound(data)
-    print distance, self.navState, self.prevState, self.Stopped
+    #print data.ultra_left, data.ultra_centre, data.ultra_right,
+    print ["%0.3f" %i for i in distance],
+    print self.navState, self.prevState, self.Stopped
     self.navStatePub.publish(self.navState)
-    if distance < 0.7 and self.navState == self.AUTO_MODE:
+    if distance[self.UC] < 0.7 and self.navState == self.AUTO_MODE:
       print "STOPPING"
       self.robotMove(self.STOP)
       self.prevState = self.navState      
       self.navState = self.ROBOT_LOST   
       self.Stopped = True
-    elif distance > 0.8 and self.Stopped == True and self.navState == self.ROBOT_LOST:
+    elif distance[self.UC] > 0.8 and self.Stopped == True and self.navState == self.ROBOT_LOST:
       self.navState = self.prevState
       self.prevState = self.MANUAL_MODE
       self.Stopped = False
@@ -152,10 +162,20 @@ class eodNav:
     self.robotCmdPub.publish(self.vel)
 
   def processUltrasound(self, data): 
-    self.val = numpy.append(self.val, data.range)
-    self.val = numpy.delete(self.val, 1)  
-    v = self.smooth(self.val)
-    return v.mean()
+    #Values based on calibration. Calculated in inches and then converted to m
+    c = ((data.ultra_centre + 1.7)/1.325)*0.0254
+    l = ((data.ultra_left + 1.7)/1.325)*0.0254
+    r = ((data.ultra_right + 5)/2)*0.0254
+    self.val_c = numpy.append(self.val_c, c)
+    self.val_r = numpy.append(self.val_r, r)
+    self.val_l = numpy.append(self.val_l, l)   
+    self.val_c = numpy.delete(self.val_c, 1)  
+    self.val_r = numpy.delete(self.val_r, 1)  
+    self.val_l = numpy.delete(self.val_l, 1)          
+    v_c = self.smooth(self.val_c)
+    v_r = self.smooth(self.val_r)
+    v_l = self.smooth(self.val_l)            
+    return [v_l.mean(), v_c.mean(), v_r.mean()]
     
   def smooth(self, x, window_len=11,window='hanning'):
     if x.ndim != 1:

@@ -22,8 +22,8 @@
 
 #define FS 400
 #define ULTRA_FRONT A0
-#define ULTRA_RIGHT A1
-#define ULTRA_LEFT A2
+#define ULTRA_RIGHT A2
+#define ULTRA_LEFT A1
 #define ENC_LEFT 2
 #define ENC_RIGHT 3
 
@@ -56,6 +56,7 @@ int leftVel;
 
 float getRange_Ultrasound(int pin_num){
   int val = 0;
+  return analogRead(pin_num);  
   for(int i=0; i<4; i++) val += analogRead(pin_num);
   float range =  val;
   return range /322.519685;   // (0.0124023437 /4) ; //cvt to meters
