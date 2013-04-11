@@ -81,10 +81,12 @@ class eodNav:
     self.rotLinVel = rospy.get_param("~rot_lin_vel", 0.2)
     self.rotAngVel = rospy.get_param("~rot_ang_vel", 0.1) 
     self.avoidDist = rospy.get_param("~avoid_dist", 3.5)   
+    self.stopDist = rospy.get_param("~stop_dist", 0.7)
     rospy.set_param("~st_lin_vel", self.stLinVel)
     rospy.set_param("~rot_lin_vel", self.rotLinVel)
     rospy.set_param("~rot_ang_vel", self.rotAngVel)
     rospy.set_param("~avoid_dist", self.avoidDist)        
+    rospy.set_param("~stop_dist", self.stopDist)        
     
   def spin(self):
     rospy.spin()
@@ -114,16 +116,16 @@ class eodNav:
     else:
       print ""
     #All paths are blocked
-    #if self.OBS == 7 and self.navState == self.AUTO_MODE:
-    #  print "STOPPING"
-    #  #self.robotMove(self.STOP)
-    #  self.prevState = self.navState      
-    #  self.navState = self.ROBOT_LOST   
-    #  self.Stopped = True
-    #elif self.OBS != 7 and self.Stopped == True and self.navState == self.ROBOT_LOST:
-    #  self.navState = self.prevState
-    #  self.prevState = self.MANUAL_MODE
-    #  self.Stopped = False
+    if distance[1] < self.stopDist and self.navState == self.AUTO_MODE:
+      print "STOPPING"
+      self.robotMove(self.STOP)
+      self.prevState = self.navState      
+      self.navState = self.ROBOT_LOST   
+      self.Stopped = True
+    elif  distance[1] > self.stopDist and self.Stopped == True and self.navState == self.ROBOT_LOST:
+      self.navState = self.prevState
+      self.prevState = self.MANUAL_MODE
+      self.Stopped = False
     
   def userDest(self, data):
     if data.destPresent == True:
