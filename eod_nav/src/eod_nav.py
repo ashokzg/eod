@@ -97,7 +97,7 @@ class eodNav:
     self.navStatePub.publish(self.navState)    
     self.OBS = 0
     for i in range(3):
-      if distance[i] < 0.7:
+      if distance[i] < 1.5:
         self.OBS |= self.OBS_IDX[i]
     #print data.ultra_left, data.ultra_centre, data.ultra_right,
     print [self.OBS&self.OBS_L, self.OBS&self.OBS_C, self.OBS&self.OBS_R],
