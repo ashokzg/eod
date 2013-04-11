@@ -43,11 +43,23 @@ class eodNav:
   
   def __init__(self):
     rospy.init_node("eod_navigation")
+    print "Came to init"
     self.navState = self.IDLE
     self.vel = Velocity()
     self.vel.linVelPcent = 0.0
     self.vel.angVelPcent = 0.0    
-    print "Came to init"
+    self.Stopped = False
+    self.prevState = self.IDLE
+    self.updateParameters()
+    #Initialize values
+    try:
+      img = rospy.wait_for_message("camera/camera_info", CameraInfo, 2.0)
+      self.imgWidth = img.width
+      self.imgHeight = img.height
+    except rospy.ROSException:
+      self.imgWidth = 640
+      self.imgHeight = 480
+      
     #Init the subscribers    
     #    UI
     rospy.Subscriber("UserDestination", Dest, self.userDest)
@@ -61,18 +73,8 @@ class eodNav:
     
     self.navStatePub.publish(self.navState)
     self.robotCmdPub.publish(self.vel)
-    self.Stopped = False
-    self.prevState = self.IDLE
-    self.updateParameters()
     print "Velocity parameters", self.stLinVel, self.rotLinVel, self.rotAngVel
-    #Initialize values
-    try:
-      img = rospy.wait_for_message("camera/camera_info", CameraInfo, 2.0)
-      self.imgWidth = img.width
-      self.imgHeight = img.height
-    except rospy.ROSException:
-      self.imgWidth = 640
-      self.imgHeight = 480
+
     
   def updateParameters(self):
     self.stLinVel = rospy.get_param("~st_lin_vel", 0.5)
@@ -86,14 +88,21 @@ class eodNav:
     #Smoothes the ultrasonic data with a gaussian filter
     #Distance is a list of ultrasonic [left, center, right]
     distance = self.processUltrasound(data)
-    #print data.ultra_left, data.ultra_centre, data.ultra_right,
-    print ["%0.3f" %i for i in distance],
-    print self.navState, self.prevState, self.Stopped
+    try:
+      l, r = self.calcZone()
+      print l, r, 
+    except:
+      print "ALL BLOCKED"
+
     self.navStatePub.publish(self.navState)    
     self.OBS = 0
     for i in range(3):
       if distance[i] < 0.7:
         self.OBS |= self.OBS_IDX[i]
+    #print data.ultra_left, data.ultra_centre, data.ultra_right,
+    print [self.OBS&self.OBS_L, self.OBS&self.OBS_C, self.OBS&self.OBS_R],
+    print ["%0.3f" %i for i in distance],
+    print self.navState, self.prevState, self.Stopped
     if distance[self.UC] < 0.7 and self.navState == self.AUTO_MODE:
       print "STOPPING"
       self.robotMove(self.STOP)
@@ -131,25 +140,28 @@ class eodNav:
   
   def trackedDest(self, data):
     #print "tracking in state", self.navState 
-    leftLimit, rightLimit = self.calcZone();
-    print leftLimit, rightLimit
-    if self.navState in [self.AUTO_MODE, self.DEST_LOST]:
-      if data.destPresent == True:
-        self.navState = self.AUTO_MODE
-        cx = data.destX + data.destWidth/2
-        cy = data.destY + data.destHeight/2
-        #If the destination is slipping towards the left, turn left
-        if cx < leftLimit:
-          self.robotMove(self.LEFT)
-        #If the destination is slipping towards the right, turn right
-        elif cx > rightLimit:
-          self.robotMove(self.RIGHT)
-        #We are good to zip towards the destination
+    try:
+      leftLimit, rightLimit = self.calcZone();
+      if self.navState in [self.AUTO_MODE, self.DEST_LOST]:
+        if data.destPresent == True:
+          self.navState = self.AUTO_MODE
+          cx = data.destX + data.destWidth/2
+          cy = data.destY + data.destHeight/2
+          #If the destination is slipping towards the left, turn left
+          if cx < leftLimit:
+            self.robotMove(self.LEFT)
+          #If the destination is slipping towards the right, turn right
+          elif cx > rightLimit:
+            self.robotMove(self.RIGHT)
+          #We are good to zip towards the destination
+          else:
+            self.robotMove(self.STRAIGHT) 
         else:
-          self.robotMove(self.STRAIGHT) 
-      else:
-        self.navState = self.DEST_LOST
-        self.robotMove(self.STOP)
+          self.navState = self.DEST_LOST
+          self.robotMove(self.STOP)
+    except:
+      print "ALL WAYS BLOCKED"
+      self.robotMove(self.STOP)   
   
   def calcZone(self):
     leftLimit = 0
@@ -171,19 +183,19 @@ class eodNav:
       leftLimit = (self.imgWidth/2 - 50)
       rightLimit = (self.imgWidth/2 + 50)
     #Only left is blocked, try to keep destination slighly towards the left      
-    elif self.OBS == self.L:
+    elif self.OBS == self.OBS_L:
       leftLimit = (self.imgWidth/2 - 50) - 100
       rightLimit = (self.imgWidth/2 + 50) - 100      
     #Only right is blocked, try to keep destination slighly towards the left      
-    elif self.OBS == self.R:
+    elif self.OBS == self.OBS_R:
       leftLimit = (self.imgWidth/2 - 50) + 100
       rightLimit = (self.imgWidth/2 + 50) + 100      
     #Center is blocked, we choose to go towards left, 
     #so that the longer right side of the robot does not hit the obstacle. 
     #Robot is longer on right because we use the left camera for navigation
-    elif self.OBS == self.C:
-      leftLimit = (self.imgWidth/2 - 50) - 100
-      rightLimit = (self.imgWidth/2 + 50) - 100            
+    elif self.OBS == self.OBS_C:
+      leftLimit = (self.imgWidth/2 - 50) - 150
+      rightLimit = (self.imgWidth/2 + 50) - 150            
     #All paths are blocked, poor robot. Stop it
     elif self.OBS == (self.OBS_L | self.OBS_C | self.OBS_R):
       print "All paths blocked"
