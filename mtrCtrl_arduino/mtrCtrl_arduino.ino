@@ -22,12 +22,6 @@
 #define FS 400
 #define ULTRA_PIN A0
 
-DualVNH5019MotorShield md;
-
-ros::NodeHandle  nh;
-
-sensor_msgs::Range range_msg;
-ros::Publisher pub_range( "/ultrasound", &range_msg);
 
 const int adc_pin = 0;
 
@@ -84,14 +78,26 @@ void messageCb( const vel_msgs::Velocity& vel){
   md.setM2Speed(leftVel);
 }
 
-ros::Subscriber<vel_msgs::Velocity> sub("cmd_vel", &messageCb );
+
 
 void setup()
 { 
+  
+  
+DualVNH5019MotorShield md;
+
+ros::NodeHandle  nh;
+sensor_msgs::Range range_msg;
+ros::Publisher pub_range( "/ultrasound", &range_msg);
+ros::Subscriber<vel_msgs::Velocity> sub("cmd_vel", &messageCb );  
+
+
   md.init();
   nh.initNode();
   nh.subscribe(sub);
   nh.advertise(pub_range);
+
+
   
   range_msg.radiation_type = sensor_msgs::Range::ULTRASOUND;
   //range_msg.header.frame_id =  frameid;
