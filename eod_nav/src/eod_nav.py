@@ -29,6 +29,13 @@ class eodNav:
   UC = 1
   UR = 2
   
+  #Obstacle
+  OBS_L = 1
+  OBS_C = 2
+  OBS_R = 4
+  OBS_IDX = [OBS_L, OBS_C, OBS_R]
+  OBS  = 0
+  
   #Used for smoothing the ultrasonic
   val_c = numpy.zeros(15)  
   val_r = numpy.zeros(15)  
@@ -82,7 +89,11 @@ class eodNav:
     #print data.ultra_left, data.ultra_centre, data.ultra_right,
     print ["%0.3f" %i for i in distance],
     print self.navState, self.prevState, self.Stopped
-    self.navStatePub.publish(self.navState)
+    self.navStatePub.publish(self.navState)    
+    self.OBS = 0
+    for i in range(3):
+      if distance[i] < 0.7:
+        self.OBS |= self.OBS_IDX[i]
     if distance[self.UC] < 0.7 and self.navState == self.AUTO_MODE:
       print "STOPPING"
       self.robotMove(self.STOP)
@@ -120,16 +131,18 @@ class eodNav:
   
   def trackedDest(self, data):
     #print "tracking in state", self.navState 
+    leftLimit, rightLimit = self.calcZone();
+    print leftLimit, rightLimit
     if self.navState in [self.AUTO_MODE, self.DEST_LOST]:
       if data.destPresent == True:
         self.navState = self.AUTO_MODE
         cx = data.destX + data.destWidth/2
         cy = data.destY + data.destHeight/2
         #If the destination is slipping towards the left, turn left
-        if cx < (self.imgWidth/2 - 50):
+        if cx < leftLimit:
           self.robotMove(self.LEFT)
         #If the destination is slipping towards the right, turn right
-        elif cx > (self.imgWidth/2 + 50):
+        elif cx > rightLimit:
           self.robotMove(self.RIGHT)
         #We are good to zip towards the destination
         else:
@@ -138,6 +151,44 @@ class eodNav:
         self.navState = self.DEST_LOST
         self.robotMove(self.STOP)
   
+  def calcZone(self):
+    leftLimit = 0
+    rightLimit = 0    
+    if self.OBS == 0:
+      leftLimit = self.imgWidth/2 - 50
+      rightLimit = self.imgWidth/2 + 50
+    #Both Left and Center are blocked, try to maintain destination towards left end of camera
+    elif self.OBS == (self.OBS_L | self.OBS_C):
+      leftLimit = (self.imgWidth/2 - 50) - 200
+      rightLimit = (self.imgWidth/2 + 50) - 200
+    #Both Center and Right are blocked, try to maintain destination towards right end of camera      
+    elif self.OBS == (self.OBS_C | self.OBS_R):
+      leftLimit = (self.imgWidth/2 - 50) + 200
+      rightLimit = (self.imgWidth/2 + 50) + 200            
+    #Weirdly right and left are blocked and there seems to be a way in the middle
+    #Try to go through it      
+    elif self.OBS == (self.OBS_L | self.OBS_R):
+      leftLimit = (self.imgWidth/2 - 50)
+      rightLimit = (self.imgWidth/2 + 50)
+    #Only left is blocked, try to keep destination slighly towards the left      
+    elif self.OBS == self.L:
+      leftLimit = (self.imgWidth/2 - 50) - 100
+      rightLimit = (self.imgWidth/2 + 50) - 100      
+    #Only right is blocked, try to keep destination slighly towards the left      
+    elif self.OBS == self.R:
+      leftLimit = (self.imgWidth/2 - 50) + 100
+      rightLimit = (self.imgWidth/2 + 50) + 100      
+    #Center is blocked, we choose to go towards left, 
+    #so that the longer right side of the robot does not hit the obstacle. 
+    #Robot is longer on right because we use the left camera for navigation
+    elif self.OBS == self.C:
+      leftLimit = (self.imgWidth/2 - 50) - 100
+      rightLimit = (self.imgWidth/2 + 50) - 100            
+    #All paths are blocked, poor robot. Stop it
+    elif self.OBS == (self.OBS_L | self.OBS_C | self.OBS_R):
+      print "All paths blocked"
+      raise Exception
+    return leftLimit, rightLimit
   
   def robotMove(self, dir):
     if dir == self.STRAIGHT:
