@@ -77,11 +77,11 @@ class eodNav:
 
     
   def updateParameters(self):
-    self.stLinVel = rospy.get_param("~st_lin_vel", 0.2)
-    self.rotLinVel = rospy.get_param("~rot_lin_vel", 0.2)
-    self.rotAngVel = rospy.get_param("~rot_ang_vel", 0.1) 
+    self.stLinVel = rospy.get_param("~st_lin_vel", 0.4)
+    self.rotLinVel = rospy.get_param("~rot_lin_vel", 0.4)
+    self.rotAngVel = rospy.get_param("~rot_ang_vel", 0.2) 
     self.avoidDist = rospy.get_param("~avoid_dist", 3.5)   
-    self.stopDist = rospy.get_param("~stop_dist", 0.7)
+    self.stopDist = rospy.get_param("~stop_dist", 1.5)
     rospy.set_param("~st_lin_vel", self.stLinVel)
     rospy.set_param("~rot_lin_vel", self.rotLinVel)
     rospy.set_param("~rot_ang_vel", self.rotAngVel)
@@ -94,7 +94,12 @@ class eodNav:
   def ultraSound(self, data):
     #Smoothes the ultrasonic data with a gaussian filter
     #Distance is a list of ultrasonic [left, center, right]
+    #distance = [0,0,0]
     distance = self.processUltrasound(data)
+    #distance[1] = ((data.ultra_centre + 1.7)/1.325)*0.0254
+    #distance[0] = 6.0
+    #distance[2] = 6.0
+    self.dist = distance
     try:
       l, r = self.calcZone()
       print l, r,
@@ -160,6 +165,8 @@ class eodNav:
       return
     if self.navState in [self.AUTO_MODE, self.DEST_LOST]:
       if data.destPresent == True:
+        if self.navState == self.DEST_LOST:
+          self.navState = self.AUTO_MODE
         self.navState = self.AUTO_MODE
         cx = data.destX + data.destWidth/2
         cy = data.destY + data.destHeight/2
@@ -173,8 +180,34 @@ class eodNav:
         else:
           self.robotMove(self.STRAIGHT) 
       else:
-        self.navState = self.DEST_LOST
-        self.robotMove(self.STOP)
+        if self.navState != self.DEST_LOST:
+          self.frameCount = 0
+          self.navState = self.DEST_LOST
+        else:
+          self.search_destination()
+        #self.robotMove(self.STOP)
+  
+  def search_destination(self):    
+    print "Searching for Destination"
+    if self.dist[1] > 0.8:
+      #Arbitrarly choose to go forward
+      if self.frameCount <= 40:
+        self.vel.linVelPcent = 0.2
+        self.vel.angVelPcent = 0
+      #after some time choose to turn LEFT
+      elif self.frameCount <= 80:
+        self.vel.linVelPcent = 0.3
+        self.vel.angVelPcent = 0.1
+      elif self.frameCount <= 120:
+        self.vel.linVelPcent = 0.0
+        self.vel.angVelPcent = 0.0
+      else:
+        self.frameCount = 0
+      self.robotCmdPub.publish(self.vel)      
+      self.frameCount += 1
+
+      
+                
   
   def calcZone(self):
     leftLimit = 0
