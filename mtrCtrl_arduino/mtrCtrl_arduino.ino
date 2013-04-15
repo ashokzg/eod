@@ -21,15 +21,20 @@
 //Full Speed = 400 : 0-255 for Analog Write mapped to 400
 
 #define FS 400
-#define ULTRA_FRONT A0
-#define ULTRA_RIGHT A2
-#define ULTRA_LEFT A1
+#define ULTRA_FRONT A1
+#define ULTRA_RIGHT A0
+#define ULTRA_LEFT A2
 #define ENC_LEFT 2
 #define ENC_RIGHT 3
+#define PROBE_PIN 8
 
 #define Circum 35.0 //circumference of wheel, length per rev
 #define CPR 80 // Counts Per Revolution
 #define TCC 24 //Turning circle circumference in cm
+#define UREAD 0
+#define UPROBE_START 1
+#define UPROBE_END 2
+#define UWAIT 3
 
 // Volatile variables that can be changed inside of interrupt functions
 unsigned int RightEncoderPos;
@@ -37,6 +42,8 @@ unsigned int LeftEncoderPos;
 unsigned int Lcount,Rcount;
 unsigned long LdVal = 0;
 unsigned long RdVal = 0;
+
+int readOrProbe = UWAIT;
 
 DualVNH5019MotorShield md;
 
@@ -103,28 +110,49 @@ ros::Subscriber<vel_msgs::Velocity> sub("cmd_vel", &messageCb );
 
 void setup()
 { 
-  
+  pinMode(PROBE_PIN, OUTPUT);
   md.init();
   nh.initNode();
   nh.subscribe(sub);
   nh.advertise(pub_range);
 }
 
-long range_time;
+long range_time, probe_time;
 
 void loop()
 {  
 
+
+  if(readOrProbe == UPROBE_START)
+  {
+     digitalWrite(PROBE_PIN, HIGH);   // sets the trigger to HIGH
+     readOrProbe = UPROBE_END;
+     probe_time = millis() + 5;
+  }
+  else if(readOrProbe == UPROBE_END)
+  {
+    if(millis() > probe_time)
+    {
+      digitalWrite(PROBE_PIN, LOW);   // sets the trigger to LOW
+      readOrProbe = UWAIT;
+      range_time = millis() + 150; 
+    }    
+  }
+  else if(readOrProbe == UWAIT)
+  {
+    if(millis() > range_time)
+      readOrProbe = UREAD;
+  }  
   //publish the adc value every 50 milliseconds
   //since it takes that long for the sensor to stablize
-  
-  if ( millis() >= range_time ){
-    us_msg.ultra_centre = getRange_Ultrasound(ULTRA_FRONT);
-    us_msg.ultra_right = getRange_Ultrasound(ULTRA_RIGHT);
-    us_msg.ultra_left = getRange_Ultrasound(ULTRA_LEFT);    
-    us_msg.header.stamp = nh.now();
-    pub_range.publish(&us_msg);
-    range_time =  millis() + 50;
+  else if(readOrProbe == UREAD)
+  {    
+      us_msg.ultra_centre = getRange_Ultrasound(ULTRA_FRONT)*1.27;
+      us_msg.ultra_right = getRange_Ultrasound(ULTRA_RIGHT)*1.27;
+      us_msg.ultra_left = getRange_Ultrasound(ULTRA_LEFT)*1.27;    
+      us_msg.header.stamp = nh.now();
+      pub_range.publish(&us_msg);
+      readOrProbe = UPROBE_START;    
   }
 
   nh.spinOnce();
