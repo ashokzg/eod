@@ -1,0 +1,18 @@
+<package>
+  <description brief="ultrasonic">
+
+     ultrasonic
+
+  </description>
+  <author>TeamB</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/ultrasonic</url>
+  <depend package="std_msgs"/>
+  <depend package="roscpp"/>
+  <depend package="rospy"/>
+  <depend package="rosserial_arduino"/>
+
+</package>
+
+
