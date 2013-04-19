@@ -32,7 +32,7 @@ bool QNode::init() {
 
     image_transport::ImageTransport it(n);
     sub = it.subscribe("/camera/image_raw", 1, &QNode::imageCallback,this,image_transport::TransportHints("compressed"));
-    sub2 = it.subscribe("Tracked_Destination", 1, &QNode::imageCallback2,this,image_transport::TransportHints("compressed"));
+    sub2 = it.subscribe("/camera/image_raw", 1, &QNode::imageCallback2,this,image_transport::TransportHints("compressed"));
     rect_msg = n.subscribe("/destination", 1, &QNode::sendCoord,this);
     start();
 	return true;
