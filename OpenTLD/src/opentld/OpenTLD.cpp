@@ -52,8 +52,7 @@ OpenTLD::Dest destination, userDest;
 
 //Initialize the destination location publisher
 ros::Publisher destPub;
-//Use method of ImageTransport to create image publisher for the tracked destination
-image_transport::Publisher DestTrackPub;
+
 
 static bool tldInit = false;
 
@@ -94,8 +93,7 @@ void imageCallback(const sensor_msgs::ImageConstPtr& original_image)
     }
 
     destPub.publish(destination);
-    DestTrackPub.publish(cv_ptr->toImageMsg());
-    //cv_ptr->image;
+
 }
 
 void userSelectedDestination(const OpenTLD::Dest::ConstPtr& d)
@@ -133,7 +131,6 @@ int main(int argc, char **argv)
 	//Initialize the image transport subscriber
 	image_transport::ImageTransport it(nh);
 	image_transport::Subscriber imgSub = it.subscribe("camera/image_raw", 1, imageCallback);
-	DestTrackPub = it.advertise("Tracked_Destination", 1);
 
 	ros::Subscriber userDestSub = nh.subscribe("/UserDestination", 1000, userSelectedDestination);
 
