@@ -1,0 +1,10 @@
+Header header
+string navState
+string autoState
+bool[3] obsAvoid
+bool[3] obsStop
+float32[3] dist
+teamb_ui/Dest destRect
+float32 destArea
+string uiState
+string robotReturn

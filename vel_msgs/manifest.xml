@@ -12,7 +12,9 @@
   <depend package="rospy"/>
   <depend package="roscpp"/>
   <depend package="rosserial_arduino"/>
-
+  <export>
+    <cpp cflags=" -I${prefix}/srv_gen/cpp/include"/>
+  </export>
 </package>
 
 

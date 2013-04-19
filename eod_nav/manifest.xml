@@ -13,6 +13,8 @@
   <depend package="teamb_ui"/>
   <depend package="std_msgs"/>
   <depend package="geometry_msgs"/>
+  <depend package="ultrasonic"/>
+  <depend package="vel_msgs"/>
   <export>
     <cpp cflags=" -I${prefix}/srv_gen/cpp/include"/>
   </export>

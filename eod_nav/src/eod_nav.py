@@ -5,7 +5,9 @@ import roslib; roslib.load_manifest('eod_nav')
 from teamb_ui.msg import Dest
 import std_msgs.msg
 from sensor_msgs.msg import CameraInfo, Range
-from eod_nav.msg import Velocity, Ultrasonic
+from eod_nav.msg import NavDebug
+from ultrasonic.msg import Ultrasonic
+from vel_msgs.msg import Velocity
 
 import numpy
 import copy
@@ -121,12 +123,13 @@ class eodNav:
     self.autoState  = AUTO.IDLE
     self.navState   = NAV.IDLE
     self.uiState    = USR.UI_READY 
-    self.prevState = NAV.IDLE
+    self.prevState  = NAV.IDLE
         
         
   def lowLevelInits(self):
     self.vel = Velocity() 
-    self.manCmdVel = Velocity()         
+    self.manCmdVel = Velocity()  
+    self.navDebug = NavDebug()       
     self.vel.linVelPcent = 0.0
     self.vel.angVelPcent = 0.0
     self.manCmdVel.linVelPcent = 0.0
@@ -170,6 +173,7 @@ class eodNav:
     self.navStatePub = rospy.Publisher('Nav_State', std_msgs.msg.UInt32)
     self.robotCmdPub = rospy.Publisher('cmd_vel', Velocity)
     self.errStatePub = rospy.Publisher('Nav_Error_Id', std_msgs.msg.UInt32)
+    self.navDebugPub = rospy.Publisher('Nav_Debug', NavDebug)
     #Publish the messages now
     self.navStatePub.publish(self.navState)
     self.robotCmdPub.publish(self.vel)
@@ -617,6 +621,21 @@ class eodNav:
     if DEBUG == True:
       print "Ultra Distance",
       print ["%0.3f" %i for i in self.dist]
+      self.navDebug.autoState = self.autoStatePrintNames[self.autoState]
+      self.navDebug.navState = self.navStatePrintNames[self.navState]
+      self.navDebug.obsAvoid = [self.OBS_AVOID & self.OBS_L, (self.OBS_AVOID & self.OBS_C)/self.OBS_C, (self.OBS_AVOID & self.OBS_R)/self.OBS_R]
+      self.navDebug.obsStop = [self.OBS_STOP & self.OBS_L, (self.OBS_STOP & self.OBS_C)/self.OBS_C, (self.OBS_STOP & self.OBS_R)/self.OBS_R]
+      self.navDebug.dist = self.dist
+      self.navDebug.robotReturn = self.autoOutputPrintNames[self.robotResp]
+      self.navDebug.uiState = self.uiPrintNames[self.uiState]
+      self.navDebug.destRect = self.dest
+      self.navDebug.header.stamp = rospy.get_rostime()
+      try:
+        self.navDebug.destArea = self.destArea
+      except AttributeError:      
+        self.navDebug.destArea = -1
+      self.navDebugPub.publish(self.navDebug) 
+      
      
 
 
@@ -802,7 +821,7 @@ class eodNav:
       "IDLE_OR_MANUAL",
       "TRACKING_ONLY",
       "AUTO_MODE"]
-    self.autoOutpuPrintNames = [
+    self.autoOutputPrintNames = [
       "ROBOT_LOST",
       "REACHED_DESTINATION",
       "STILL_RUNNING",
