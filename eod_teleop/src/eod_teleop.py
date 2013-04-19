@@ -45,6 +45,6 @@ def uiState(data):
 rospy.init_node("eod_teleop")
 rospy.Subscriber("joy", Joy, joy_callback)
 rospy.Subscriber("UiStatus", Int32, uiState)
-robotCmdPub = rospy.Publisher('cmd_vel', Velocity)
+robotCmdPub = rospy.Publisher('man_cmd_vel', Velocity)
 print "EOD Teleop started. Start joystick"    
 rospy.spin()
