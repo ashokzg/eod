@@ -10,6 +10,8 @@ from eod_nav.msg import Velocity, Ultrasonic
 import numpy
 import copy
 
+DEBUG = True
+
 def enum(**enums):
     return type('Enum', (), enums)
 
@@ -19,29 +21,35 @@ AUTO = enum(
   DEST_IN_SIGHT     = 1,   #Normal navigation mode
   OBS_AVOIDANCE     = 2,   #We have sighted an obstacle at 3m distance and want to avoid it
   OBS_BACKTRACK     = 3,   #We have lost the destination when we tried to avoid, we are gonna backtrack
-  OBS_RE_AVOIDANCE  = 5,   #we have backtracked and we will try to avoid it again now
-  OBS_CUTTING_CORNER= 6,   #The robot just close to avoiding an obstacle, and tries to cut corner now
-  DEST_SEARCH       = 7,   #We have lost the destination, go into destination search mode
-  DEST_REACHED      = 8,   #The destination has been reached
-  ERROR             = 9)   #Error state, with error code in comments  
+  OBS_RE_AVOIDANCE  = 4,   #we have backtracked and we will try to avoid it again now
+  OBS_CUTTING_CORNER= 5,   #The robot just close to avoiding an obstacle, and tries to cut corner now
+  DEST_SEARCH       = 6,   #We have lost the destination, go into destination search mode
+  DEST_REACHED      = 7,   #The destination has been reached
+  ERROR             = 8)   #Error state, with error code in comments  
 
 NAV = enum(
   #States of the robot
-  IDLE          = 1,
-  TRACKING_ONLY = 2,
-  AUTO_MODE     = 3,
-  ROBOT_LOST    = 4,
-  MANUAL_MODE   = 5)
+  IDLE          = 0,
+  TRACKING_ONLY = 1,
+  AUTO_MODE     = 2,  
+  MANUAL_MODE   = 3,
+  ERROR         = 4)
 
 ERR = enum(
   #Error codes
-  ERR_ILLEGAL           = 0,
-  ERR_STUPID            = 1,
-  ERR_UNABLE_TO_AVOID   = 2,
-  ERR_UNABLE_TO_SEARCH  = 3,
-  ERR_TIMEOUT           = 4,
-  NONE                  = 5,
-  PREVIOUS              = 6)
+  #--- ERROR CODES OF AUTO STATE ---#
+  ERR_ILLEGAL             = 0,    #Illegal Autonomous mode. Comes when ultrasonic is < 0.5 but also > 3.
+  ERR_STUPID              = 1,    #Someone does crazy things
+  ERR_DYNAMIC_OBSTACLE    = 2,    #Dynamic obstacles
+  ERR_UNABLE_TO_AVOID     = 3,    #Unable to avoid the obstacle after 1 retry
+  ERR_UNABLE_TO_SEARCH    = 4,    #Unable to locate the destination after search
+  ERR_TIMEOUT             = 5,    #Timeout error
+  #--- ERROR CODES OF NAV STATE ---#
+  ERR_UNKNOWN_DESTINATION = 6,    #Asked robot to move autonomously without giving destination
+  ERR_ROBOT_LOST          = 7,    #The robot is lost.
+  #--- ERROR CODES OF GENERAL ---#
+  NONE                    = 8,    #No errors. Default value of any error state
+  PREVIOUS                = 9)    #Same error as previous
 
 USR = enum(
   #States of the UI
@@ -50,17 +58,28 @@ USR = enum(
   TRACKING_ONLY = 2,
   AUTO_MODE     = 3)          
 
-  
+AUTO_OUTPUT =enum(
+  ROBOT_LOST = 0,
+  REACHED_DESTINATION = 1,
+  STILL_RUNNING = 2,
+  SOME_OTHER_ERROR = 3)
+
+
+class AutoNavError(Exception):
+  def __init__(self, errId, msg):
+    self.errId = errId
+    self.msg = msg
+  def __str__(self):
+    return repr(self.msg)
+
+class NavError(Exception):
+  def __init__(self, errId, msg):
+    self.errId = errId
+    self.msg = msg
+  def __str__(self):
+    return repr(self.msg)
 
 class eodNav:
-  #States of the robot
-  IDLE          = 1
-  TRACKING_ONLY = 2
-  AUTO_MODE     = 3
-  DEST_LOST     = 4
-  ROBOT_LOST    = 5
-  MANUAL_MODE   = 6   
-      
   #Move commands
   STRAIGHT = 0
   LEFT = 1
@@ -76,13 +95,12 @@ class eodNav:
   OBS_L = 1
   OBS_C = 2
   OBS_R = 4
-  OBS_IDX = [OBS_L, OBS_C, OBS_R]
-  OBS_AVOID  = 0
+  OBS_IDX = [OBS_L, OBS_C, OBS_R]  
 
   #Used for smoothing the ultrasonic
-  val_c = numpy.zeros(15)  
-  val_r = numpy.zeros(15)  
-  val_l = numpy.zeros(15)      
+  val_c = numpy.zeros(5)  
+  val_r = numpy.zeros(5)  
+  val_l = numpy.zeros(5)      
   #===============================================================
   #
   #    INITIALIZATIONS AND PRE-NAVIGATION FUNCTIONS
@@ -97,6 +115,7 @@ class eodNav:
     self.updateParameters()
     self.initCamParams()
     
+    
   def highLevelInits(self):
     #Keep track of state
     self.autoState  = AUTO.IDLE
@@ -104,14 +123,28 @@ class eodNav:
     self.uiState    = USR.UI_READY 
     self.prevState = NAV.IDLE
         
+        
   def lowLevelInits(self):
-    self.vel = Velocity()          
+    self.vel = Velocity() 
+    self.manCmdVel = Velocity()         
     self.vel.linVelPcent = 0.0
     self.vel.angVelPcent = 0.0
-    self.dest = Dist()
+    self.manCmdVel.linVelPcent = 0.0
+    self.manCmdVel.angVelPcent = 0.0
+    self.dest = Dest()
     self.dest.destPresent = False     
     self.Stopped = False
+    self.robotResp = AUTO_OUTPUT.REACHED_DESTINATION #TODO Automode return status
+    self.defineNavStateTransitionMatrix()
     self.defineAutoStateTransitionMatrix()
+    self.definePrintNames()
+    self.dist = [0,0,0]
+    self.OBS_STOP = 0
+    self.OBS_AVOID = 0
+    self.TIME_STEP = 50 #ms
+    self.AREA_THRESHOLD = 0.5 #If destination is greater than 50% of the image stop.
+    self.ultraCount = 0
+    
     
   def initCamParams(self):    
     #Initialize values
@@ -123,27 +156,31 @@ class eodNav:
       self.imgWidth = 640
       self.imgHeight = 480
 
+
   def initSubAndPub(self):      
     #Init the subscribers    
     #    UI
     rospy.Subscriber("UserDestination", Dest, self.userDest)
     rospy.Subscriber("UiStatus", std_msgs.msg.Int32, self.uiStateHdl)
+    rospy.Subscriber("man_cmd_vel", Velocity, self.manCmdVelHdl)
     #    Tracker
     rospy.Subscriber("destination", Dest, self.trackedDest)
     rospy.Subscriber("ultrasound", Ultrasonic, self.ultraSound)
     #Init the publishers
     self.navStatePub = rospy.Publisher('Nav_State', std_msgs.msg.UInt32)
     self.robotCmdPub = rospy.Publisher('cmd_vel', Velocity)
+    self.errStatePub = rospy.Publisher('Nav_Error_Id', std_msgs.msg.UInt32)
     #Publish the messages now
     self.navStatePub.publish(self.navState)
     self.robotCmdPub.publish(self.vel)
+    
     
   def updateParameters(self):
     self.stLinVel = rospy.get_param("~st_lin", 0.4)
     self.rotLinVel = rospy.get_param("~rot_lin", 0.4)
     self.rotAngVel = rospy.get_param("~rot_ang", 0.2) 
-    self.OBS_AVOID_DIST = rospy.get_param("~OBS_AVOID_DIST", 2.8)   
-    self.OBS_STOP_DIST = rospy.get_param("~stop_dist", 0.8)
+    self.OBS_AVOID_DIST = rospy.get_param("~obs_avoid_dist", 2.8)   
+    self.OBS_STOP_DIST = rospy.get_param("~obs_stop_dist", 0.8)
     self.obsStLinVel = rospy.get_param("~obs_st_lin", 0.2)
     self.obsRotLinVel = rospy.get_param("~obs_rot_lin", 0.1)
     self.obsRotAngVel = rospy.get_param("~obs_rot_ang", 0.1) 
@@ -151,8 +188,8 @@ class eodNav:
     rospy.set_param("~st_lin_vel", self.stLinVel)
     rospy.set_param("~rot_lin_vel", self.rotLinVel)
     rospy.set_param("~rot_ang_vel", self.rotAngVel)
-    rospy.set_param("~OBS_AVOID_DIST", self.OBS_AVOID_DIST)        
-    rospy.set_param("~stop_dist", self.OBS_STOP_DIST)        
+    rospy.set_param("~obs_avoid_dist", self.OBS_AVOID_DIST)        
+    rospy.set_param("~obs_stop_dist", self.OBS_STOP_DIST)        
     rospy.set_param("~obs_st_lin", self.obsStLinVel)
     rospy.set_param("~obs_rot_lin", self.obsRotLinVel)
     rospy.set_param("~obs_rot_ang", self.obsRotAngVel)
@@ -171,20 +208,17 @@ class eodNav:
     #Smoothes the ultrasonic data with a gaussian filter
     #Distance is a list of ultrasonic [left, center, right]
     self.dist = self.processUltrasound(data)
-    try:
-      l, r = self.calcZone()
-      print l, r,
-      allPathsBlocked = 0 
-    except:
-      allPathsBlocked = 1
-
     self.navStatePub.publish(self.navState)    
     self.OBS_AVOID = 0
-    for i in range(3):
-      if self.dist[i] < self.OBS_AVOID_DIST:
-        self.OBS_AVOID |= self.OBS_IDX[i]
-      elif self.dist[i] < self.OBS_STOP_DIST:
-        self.OBS_STOP |= self.OBS_IDX[i]
+    self.OBS_STOP = 0
+    #Time required to stablize
+    if self.ultraCount > 4:
+      for i in range(3):
+        if self.dist[i] < self.OBS_AVOID_DIST:
+          self.OBS_AVOID |= self.OBS_IDX[i]
+        if self.dist[i] < self.OBS_STOP_DIST:
+          self.OBS_STOP |= self.OBS_IDX[i]
+    self.ultraCount += 1
 
 
   def trackedDest(self, data):
@@ -195,21 +229,74 @@ class eodNav:
   #    MAIN NAVIGATION HANDLING
   #
   #===============================================================
-  def navHandler(self):
-    pass
+  def navHandler(self):    
+    self.navStateChange = self.navStateChanger()
+    if self.navState == NAV.IDLE:
+      self.idleStateHandler()
+    elif self.navState == NAV.TRACKING_ONLY:
+      self.trackingOnlyStateHandler()
+    elif self.navState == NAV.AUTO_MODE:
+      try:
+        self.autoModeStateHandler()
+      except AutoNavError as e:
+        if e.errId <= ERR.ERR_DYNAMIC_OBSTACLE:
+          print "Something really stupid has happened"
+        else:
+          print "Poor robot lost it's destination"
+        print "Auto Mode error:", self.errPrintNames[e.errId], e.msg
+        self.errStatePub.publish(e.errId)
+        #Setting this will make the state go to Manual mode in the next iteration
+        self.robotResp = AUTO_OUTPUT.ROBOT_LOST
+    elif self.navState == NAV.MANUAL_MODE:
+      self.manualModeStateHandler()
+    elif self.navState == NAV.ERROR:
+      self.errorStateHandler()
+    self.printNavStatus()
+    if self.navStateChange == True:
+      self.navStatePub.publish(self.navState)
+      
 
-  def autoModeHandler(self):
-    if self.navState == NAV.AUTO_MODE:
-      #All paths are blocked
-      if self.dist[self.UC] < self.OBS_STOP_DIST:
-        print "STOPPING"
-        self.robotMove(self.STOP)
-        self.autoState = self.AUTO.OBS_STOP        
-      elif  self.dist[self.UC] > self.OBS_STOP_DIST and self.Stopped == True and self.navState == NAV.ROBOT_LOST:
-        self.navState = self.prevState
-        self.prevState = NAV.MANUAL_MODE
-        self.Stopped = False    
-    
+
+  def idleStateHandler(self):
+    if self.navStateChange == True:
+      self.robotMove(self.STOP)
+  
+  
+  def trackingOnlyStateHandler(self):
+    if self.navStateChange == True:
+      self.robotMove(self.STOP)
+
+
+  def manualModeStateHandler(self):
+    self.vel = self.manCmdVel
+    self.robotCmdPub.publish(self.vel)
+
+
+  def errorStateHandler(self):
+    #Wait for UI to take action
+    if self.navStateChange == True:
+      print "Navigation Error occurred!", self.errPrintNames[self.navErrId]
+      print "Waiting for UI to take action"      
+      self.errStatePub.publish(self.navErrId)    
+
+
+  def navStateChanger(self):
+    stateChange = False
+    try:
+      self.prevNavState = self.navState
+      if self.navState == NAV.AUTO_MODE and self.autoState == AUTO.DEST_REACHED:
+        self.robotResp = AUTO_OUTPUT.REACHED_DESTINATION
+      t = self.navStateTrans[(self.navState, self.uiState, self.robotResp)]
+      self.navState = t[0]
+      self.navErrId = t[1]
+      if self.navState == self.prevNavState:
+        stateChange = False
+      else:
+        stateChange = True          
+    except KeyError:
+      pass
+    return stateChange    
+
   def userDest(self, data):
     if data.destPresent == True:
       self.uiState = USR.TRACKING_ONLY
@@ -218,58 +305,221 @@ class eodNav:
     self.uiState = data.data
     if data.data > USR.AUTO_MODE:
       raise ValueError('Unknown state from the EOD UI')
-      
   
-  '''  
-  def uiStateHdl(self, data):
-    if data.data == 0:
-      self.navState = NAV.IDLE
-      self.robotMove(self.STOP)      
-    elif data.data == 1:
-      self.navState = NAV.MANUAL_MODE
-      self.robotMove(self.STOP)
-    elif data.data == 2:
-      self.navState = NAV.TRACKING_ONLY
-      self.robotMove(self.STOP)      
-    elif data.data == 3:
-      self.updateParameters()
-      self.navState = NAV.AUTO_MODE
-    else:
-      #Should not come to this state
-      print "This is not good! Unknown state from UI"
-      self.navState = NAV.IDLE
-      self.robotMove(self.STOP)      
-  '''
-  def control(self, data):
+  def manCmdVelHdl(self, data):
+    self.manCmdVel = copy.deepcopy(data)
+        
+  #===============================================================
+  #
+  #    AUTONOMOUS NAVIGATION HANDLING
+  #
+  #===============================================================    
+  
+  def autoModeStateHandler(self):
+    if self.navStateChange == True:
+      self.autoModeInit()
+    if self.autoCount*self.TIME_STEP > 5*60*1000:
+      raise AutoNavError(ERR.ERR_TIMEOUT, "Automode exceeded 5 minutes")    
+    self.autoCount += 1
+    self.autoStateChange = self.autoStateChanger()
+    if self.autoState == AUTO.IDLE:
+      #No possibility of coming here
+      pass
+    elif self.autoState == AUTO.DEST_IN_SIGHT:
+      self.autoDestInSight()
+      pass
+    elif self.autoState == AUTO.OBS_AVOIDANCE:
+      self.autoObsAvoidance()
+      pass
+    elif self.autoState == AUTO.OBS_BACKTRACK:
+      self.autoObsBacktrack()
+      pass
+    elif self.autoState == AUTO.OBS_RE_AVOIDANCE:
+      self.autoObsReAvoidance()
+      pass
+    elif self.autoState == AUTO.OBS_CUTTING_CORNER:
+      self.autoObsCuttingCorner()
+      pass
+    elif self.autoState == AUTO.DEST_SEARCH:
+      self.autoDestSearch()
+      pass
+    elif self.autoState == AUTO.DEST_REACHED:
+      self.autoDestReached()
+      pass
+    elif self.autoState == AUTO.ERROR:
+      self.autoError()
+      pass
+  
+  
+  def autoDestInSight(self):
     #print "tracking in state", self.navState 
-    try:
-      leftLimit, rightLimit = self.calcZone();
-    except:
-      self.robotMove(self.STOP)   
-      return
-    if self.navState in [NAV.AUTO_MODE, NAV.DEST_LOST]:
-      if data.destPresent == True:
-        if self.navState == NAV.DEST_LOST:
-          self.navState = NAV.AUTO_MODE
-        self.navState = NAV.AUTO_MODE
-        cx = data.destX + data.destWidth/2
-        cy = data.destY + data.destHeight/2
-        #If the destination is slipping towards the left, turn left
-        if cx < leftLimit:
-          self.robotMove(self.LEFT)
-        #If the destination is slipping towards the right, turn right
-        elif cx > rightLimit:
-          self.robotMove(self.RIGHT)
-        #We are good to zip towards the destination
-        else:
-          self.robotMove(self.STRAIGHT) 
+    leftLimit, rightLimit = self.calcZone();      
+    cx = self.dest.destX + self.dest.destWidth/2
+    cy = self.dest.destY + self.dest.destHeight/2
+    #If the destination is slipping towards the left, turn left
+    if cx < leftLimit:
+      self.vel.linVelPcent = self.rotLinVel
+      self.vel.angVelPcent = self.rotAngVel
+    #If the destination is slipping towards the right, turn right
+    elif cx > rightLimit:
+      self.vel.linVelPcent = self.rotLinVel
+      self.vel.angVelPcent = -self.rotAngVel
+    #We are good to zip towards the destination
+    else:
+      self.vel.linVelPcent = self.stLinVel
+      self.vel.angVelPcent = 0.0
+    self.robotCmdPub.publish(self.vel)
+
+  
+  def autoObsAvoidance(self):
+    #calczone defines where we maintain our destination
+    leftLimit, rightLimit = self.calcZone();      
+    cx = self.dest.destX + self.dest.destWidth/2
+    cy = self.dest.destY + self.dest.destHeight/2
+    #If the destination is slipping towards the left, turn left
+    if cx < leftLimit:
+      self.vel.linVelPcent = self.obsRotLinVel
+      self.vel.angVelPcent = self.obsRotAngVel
+    #If the destination is slipping towards the right, turn right
+    elif cx > rightLimit:
+      self.vel.linVelPcent = self.obsRotLinVel
+      self.vel.angVelPcent = -self.obsRotAngVel
+    #We are good to zip towards the destination
+    else:
+      self.vel.linVelPcent = self.obsStLinVel
+      self.vel.angVelPcent = 0.0
+    self.robotCmdPub.publish(self.vel)      
+  
+      
+  def autoObsBacktrack(self):
+    if self.autoStateChange == True:
+      self.backTrackCount = 0
+    #Stop trying after 25 s
+    if self.backTrackCount*self.TIME_STEP >= 25000:
+      raise AutoNavError(ERR.ERR_TIMEOUT, "Backtracking timeout")
+    self.vel.linVelPcent = self.obsStLinVel
+    self.vel.angVelPcent = 0.0
+    self.backTrackCount += 1 #Time increment every TIME_STEP    
+  
+  
+  def autoObsReAvoidance(self):
+    if self.autoStateChange == True:
+      self.reavoidanceTime = 0
+    #Stop trying after 25 s
+    if self.reavoidanceTime*self.TIME_STEP >= 25000:
+      raise AutoNavError(ERR.ERR_TIMEOUT, "Re-avoidance timeout")
+    self.reavoidanceTime += 1 #Time increment every TIME_STEP        
+    #calczone defines where we maintain our destination
+    leftLimit, rightLimit = self.calcZone();      
+    cx = self.dest.destX + self.dest.destWidth/2
+    cy = self.dest.destY + self.dest.destHeight/2
+    #If the destination is slipping towards the left, turn left
+    if cx < leftLimit:
+      self.vel.linVelPcent = self.obsRotLinVel
+      self.vel.angVelPcent = self.obsRotAngVel
+    #If the destination is slipping towards the right, turn right
+    elif cx > rightLimit:
+      self.vel.linVelPcent = self.obsRotLinVel
+      self.vel.angVelPcent = -self.obsRotAngVel
+    #We are good to zip towards the destination
+    else:
+      self.vel.linVelPcent = self.obsStLinVel
+      self.vel.angVelPcent = 0.0
+    self.robotCmdPub.publish(self.vel)
+  
+  
+  def autoObsCuttingCorner(self):
+    print "Boss please implement cutting corner"
+    self.robotMove(self.STOP)
+    pass
+  
+  
+  def autoDestSearch(self):
+    if self.autoStateChange == True:
+      self.destSearchTime = 0
+      self.autoDestSearchAction = 0
+    #Stop trying after 25 s
+    if self.destSearchTime*self.TIME_STEP >= 25000:
+      raise AutoNavError(ERR.ERR_TIMEOUT, "Destination search timeout")
+    self.destSearchTime += 1 #Time increment every TIME_STEP
+    #Change actions every 1 second
+    if self.destSearchTime*self.TIME_STEP % 1000 == 0:
+      self.autoDestSearchAction += 1    
+    #Arbitrarily choose to go forward
+    if self.autoDestSearchAction % 3 == 0:
+      self.vel.linVelPcent = 0.2
+      self.vel.angVelPcent = 0
+    #after some time choose to turn LEFT
+    elif self.autoDestSearchAction % 3 == 1:
+      self.vel.linVelPcent = 0.3
+      self.vel.angVelPcent = 0.1
+    elif self.autoDestSearchAction % 3 == 2:
+      self.vel.linVelPcent = 0.0
+      self.vel.angVelPcent = 0.0
+    self.robotCmdPub.publish(self.vel)      
+  
+  
+  def autoDestReached(self):
+    print "Yay! Destination reached"
+    self.robotMove(self.STOP)
+    print "Please implement this function boss"
+    
+    
+  def autoError(self):    
+    if self.autoErrId <= ERR.ERR_DYNAMIC_OBSTACLE:
+      if self.errorCount < 5:
+        #Severity is less. Some allakai error. Try to get back to prev state
+        self.applyAutoState = self.prevAutoState
       else:
-        if self.navState != NAV.DEST_LOST:
-          self.frameCount = 0
-          self.navState = NAV.DEST_LOST
+        raise AutoNavError(self.autoErrId, self.errPrintNames[self.autoErrId])
+    else:
+        #Fatal error. Exit
+        raise AutoNavError(self.autoErrId, self.errPrintNames[self.autoErrId])      
+        
+                
+  def autoModeInit(self):
+    self.autoState = AUTO.IDLE
+    self.autoCount = 0
+    self.robotResp = AUTO_OUTPUT.STILL_RUNNING
+    self.errorCount = 0
+    self.applyAutoState = None
+    
+    
+  def autoCalcDestArea(self):
+    if self.dest.destPresent == True:
+      return (self.dest.destHeight*self.dest.destWidth)*1.0/(self.imgHeight*self.imgWidth)
+    
+    
+  def autoStateChanger(self):
+    stateChange = False
+    oa = False
+    os = False
+    dl = False
+    if self.OBS_AVOID > 0:
+      oa = True
+    if self.OBS_STOP > 0:
+      os = True
+    if self.dest.destPresent == True:
+      dl = True    
+      self.destArea = self.autoCalcDestArea()
+    try:
+      self.prevAutoState = self.autoState
+      if self.dest.destPresent == True and self.destArea > self.AREA_THRESHOLD:
+        self.autoState = AUTO.DEST_REACHED
+      else:
+        #Someone requested to apply this state
+        if self.applyAutoState != None:
+          self.autoState = self.applyAutoState
         else:
-          self.search_destination()
-        #self.robotMove(self.STOP)
+          t = self.autoStateTrans[(self.autoState, os, oa, dl)]      
+          self.autoState = t[0]
+          self.autoErrId = t[1]
+      if self.prevAutoState != self.autoState:
+        stateChange = True
+    except KeyError:
+      print "Auto mode key error. Should not have happened"      
+    return stateChange
+  
   
   def search_destination(self):    
     print "Searching for Destination"
@@ -360,28 +610,30 @@ class eodNav:
 
   def printNavStatus(self):
     #print data.ultra_left, data.ultra_centre, data.ultra_right,
-    print [self.OBS_AVOID & self.OBS_L, self.OBS_AVOID & self.OBS_C, self.OBS_AVOID & self.OBS_R],
-    print ["%0.3f" %i for i in distance],
-    print self.navState, self.prevState, self.Stopped,
-    if allPathsBlocked == 1:
-      print "ALL PATHS BLOCKED"
-    else:
-      print ""
+    print "Nav:", self.navStatePrintNames[self.navState], "Auto:", self.autoStatePrintNames[self.autoState],
+    print "Dest:", self.dest.destPresent,
+    print "Obs Avoid:", [self.OBS_AVOID & self.OBS_L, self.OBS_AVOID & self.OBS_C, self.OBS_AVOID & self.OBS_R],
+    print "Obs Stop:", [self.OBS_STOP & self.OBS_L, self.OBS_STOP & self.OBS_C, self.OBS_STOP & self.OBS_R],
+    if DEBUG == True:
+      print "Ultra Distance",
+      print ["%0.3f" %i for i in self.dist]
+     
+
 
   def processUltrasound(self, data): 
     #Values based on calibration. Calculated in inches and then converted to m
-    c = ((data.ultra_centre + 1.7)/1.325)*0.0254
-    l = ((data.ultra_left + 1.7)/1.325)*0.0254
-    r = ((data.ultra_right + 5)/2)*0.0254
+    c = data.ultra_centre
+    l = data.ultra_left
+    r = data.ultra_right
     self.val_c = numpy.append(self.val_c, c)
     self.val_r = numpy.append(self.val_r, r)
     self.val_l = numpy.append(self.val_l, l)   
     self.val_c = numpy.delete(self.val_c, 1)  
     self.val_r = numpy.delete(self.val_r, 1)  
     self.val_l = numpy.delete(self.val_l, 1)          
-    v_c = self.smooth(self.val_c)
-    v_r = self.smooth(self.val_r)
-    v_l = self.smooth(self.val_l)            
+    v_c = self.smooth(self.val_c, 4)
+    v_r = self.smooth(self.val_r, 4)
+    v_l = self.smooth(self.val_l, 4)            
     return [v_l.mean(), v_c.mean(), v_r.mean()]
     
   def smooth(self, x, window_len=11,window='hanning'):
@@ -415,76 +667,151 @@ class eodNav:
   def defineAutoStateTransitionMatrix(self):
     self.autoStateTrans = {
       #(Current State, Obs Stopping, Obs avoid, Dest Present) : [Next State, Comments]
-      (AUTO.IDLE,                0,0,0) : (AUTO.IDLE                , AUTO.NONE                ),
-      (AUTO.IDLE,                0,0,1) : (AUTO.DEST_IN_SIGHT       , AUTO.NONE                ),
-      (AUTO.IDLE,                0,1,0) : (AUTO.ERROR               , AUTO.ERR_ILLEGAL         ),
-      (AUTO.IDLE,                0,1,1) : (AUTO.OBS_AVOIDANCE       , AUTO.NONE                ),
-      (AUTO.IDLE,                1,0,0) : (AUTO.ERROR               , AUTO.ERR_ILLEGAL         ),
-      (AUTO.IDLE,                1,0,1) : (AUTO.ERROR               , AUTO.ERR_ILLEGAL         ),
-      (AUTO.IDLE,                1,1,0) : (AUTO.ERROR               , AUTO.ERR_ILLEGAL         ),
-      (AUTO.IDLE,                1,1,1) : (AUTO.ERROR               , AUTO.ERR_STUPID          ),
-      (AUTO.DEST_IN_SIGHT,       0,0,0) : (AUTO.DEST_SEARCH         , AUTO.NONE                ),
-      (AUTO.DEST_IN_SIGHT,       0,0,1) : (AUTO.DEST_IN_SIGHT       , AUTO.NONE                ),
-      (AUTO.DEST_IN_SIGHT,       0,1,0) : (AUTO.OBS_BACKTRACK       , AUTO.NONE                ),
-      (AUTO.DEST_IN_SIGHT,       0,1,1) : (AUTO.OBS_AVOIDANCE       , AUTO.NONE                ),
-      (AUTO.DEST_IN_SIGHT,       1,0,0) : (AUTO.ERROR               , AUTO.ERR_ILLEGAL         ),
-      (AUTO.DEST_IN_SIGHT,       1,0,1) : (AUTO.ERROR               , AUTO.ERR_ILLEGAL         ),
-      (AUTO.DEST_IN_SIGHT,       1,1,0) : (AUTO.ERR_DYNAMIC_OBSTACLE, AUTO.NONE                ),
-      (AUTO.DEST_IN_SIGHT,       1,1,1) : (AUTO.ERR_DYNAMIC_OBSTACLE, AUTO.NONE                ),
-      (AUTO.OBS_AVOIDANCE,       0,0,0) : (AUTO.DEST_SEARCH         , AUTO.NONE                ),
-      (AUTO.OBS_AVOIDANCE,       0,0,1) : (AUTO.DEST_IN_SIGHT       , AUTO.NONE                ),
-      (AUTO.OBS_AVOIDANCE,       0,1,0) : (AUTO.OBS_BACKTRACK       , AUTO.NONE                ),
-      (AUTO.OBS_AVOIDANCE,       0,1,1) : (AUTO.OBS_AVOIDANCE       , AUTO.NONE                ),
-      (AUTO.OBS_AVOIDANCE,       1,0,0) : (AUTO.ERROR               , AUTO.ERR_ILLEGAL         ),
-      (AUTO.OBS_AVOIDANCE,       1,0,1) : (AUTO.ERROR               , AUTO.ERR_ILLEGAL         ),
-      (AUTO.OBS_AVOIDANCE,       1,1,0) : (AUTO.OBS_BACKTRACK       , AUTO.NONE                ),
-      (AUTO.OBS_AVOIDANCE,       1,1,1) : (AUTO.OBS_CUTTING_CORNER  , AUTO.NONE                ),
-      (AUTO.OBS_BACKTRACK,       0,0,0) : (AUTO.DEST_SEARCH         , AUTO.NONE                ),
-      (AUTO.OBS_BACKTRACK,       0,0,1) : (AUTO.OBS_RE_AVOIDANCE    , AUTO.NONE                ),
-      (AUTO.OBS_BACKTRACK,       0,1,0) : (AUTO.OBS_BACKTRACK       , AUTO.NONE                ),
-      (AUTO.OBS_BACKTRACK,       0,1,1) : (AUTO.OBS_BACKTRACK       , AUTO.NONE                ),
-      (AUTO.OBS_BACKTRACK,       1,0,0) : (AUTO.ERROR               , AUTO.ERR_ILLEGAL         ),
-      (AUTO.OBS_BACKTRACK,       1,0,1) : (AUTO.ERROR               , AUTO.ERR_ILLEGAL         ),
-      (AUTO.OBS_BACKTRACK,       1,1,0) : (AUTO.OBS_BACKTRACK       , AUTO.NONE                ),
-      (AUTO.OBS_BACKTRACK,       1,1,1) : (AUTO.OBS_BACKTRACK       , AUTO.NONE                ),
-      (AUTO.OBS_RE_AVOIDANCE,    0,0,0) : (AUTO.DEST_SEARCH         , AUTO.NONE                ),
-      (AUTO.OBS_RE_AVOIDANCE,    0,0,1) : (AUTO.OBS_RE_AVOIDANCE    , AUTO.NONE                ),
-      (AUTO.OBS_RE_AVOIDANCE,    0,1,0) : (AUTO.OBS_BACKTRACK       , AUTO.NONE                ),
-      (AUTO.OBS_RE_AVOIDANCE,    0,1,1) : (AUTO.OBS_RE_AVOIDANCE    , AUTO.NONE                ),
-      (AUTO.OBS_RE_AVOIDANCE,    1,0,0) : (AUTO.ERROR               , AUTO.ERR_ILLEGAL         ),
-      (AUTO.OBS_RE_AVOIDANCE,    1,0,1) : (AUTO.ERROR               , AUTO.ERR_ILLEGAL         ),
-      (AUTO.OBS_RE_AVOIDANCE,    1,1,0) : (AUTO.ERROR               , AUTO.ERR_UNABLE_TO_AVOID ),
-      (AUTO.OBS_RE_AVOIDANCE,    1,1,1) : (AUTO.OBS_CUTTING_CORNER  , AUTO.NONE                ),
-      (AUTO.OBS_CUTTING_CORNER,  0,0,0) : (AUTO.OBS_CUTTING_CORNER  , AUTO.NONE                ),
-      (AUTO.OBS_CUTTING_CORNER,  0,0,1) : (AUTO.DEST_IN_SIGHT       , AUTO.NONE                ),
-      (AUTO.OBS_CUTTING_CORNER,  0,1,0) : (AUTO.OBS_CUTTING_CORNER  , AUTO.NONE                ),
-      (AUTO.OBS_CUTTING_CORNER,  0,1,1) : (AUTO.OBS_AVOIDANCE       , AUTO.NONE                ),
-      (AUTO.OBS_CUTTING_CORNER,  1,0,0) : (AUTO.ERROR               , AUTO.ERR_ILLEGAL         ),
-      (AUTO.OBS_CUTTING_CORNER,  1,0,1) : (AUTO.ERROR               , AUTO.ERR_ILLEGAL         ),
-      (AUTO.OBS_CUTTING_CORNER,  1,1,0) : (AUTO.OBS_CUTTING_CORNER  , AUTO.NONE                ),
-      (AUTO.OBS_CUTTING_CORNER,  1,1,1) : (AUTO.OBS_CUTTING_CORNER  , AUTO.NONE                ),
-      (AUTO.DEST_SEARCH,         0,0,0) : (AUTO.DEST_SEARCH         , AUTO.NONE                ),
-      (AUTO.DEST_SEARCH,         0,0,1) : (AUTO.DEST_IN_SIGHT       , AUTO.NONE                ),
-      (AUTO.DEST_SEARCH,         0,1,0) : (AUTO.DEST_SEARCH         , AUTO.NONE                ),
-      (AUTO.DEST_SEARCH,         0,1,1) : (AUTO.OBS_AVOIDANCE       , AUTO.NONE                ),
-      (AUTO.DEST_SEARCH,         1,0,0) : (AUTO.ERROR               , AUTO.ERR_ILLEGAL         ),
-      (AUTO.DEST_SEARCH,         1,0,1) : (AUTO.ERROR               , AUTO.ERR_ILLEGAL         ),
-      (AUTO.DEST_SEARCH,         1,1,0) : (AUTO.ERROR               , AUTO.ERR_UNABLE_TO_SEARCH),
-      (AUTO.DEST_SEARCH,         1,1,1) : (AUTO.ERROR               , AUTO.ERR_UNABLE_TO_SEARCH),
-      (AUTO.ERROR,               0,0,0) : (AUTO.ERROR               , AUTO.PREVIOUS            ),
-      (AUTO.ERROR,               0,0,1) : (AUTO.ERROR               , AUTO.PREVIOUS            ),
-      (AUTO.ERROR,               0,1,0) : (AUTO.ERROR               , AUTO.PREVIOUS            ),
-      (AUTO.ERROR,               0,1,1) : (AUTO.ERROR               , AUTO.PREVIOUS            ),
-      (AUTO.ERROR,               1,0,0) : (AUTO.ERROR               , AUTO.PREVIOUS            ),
-      (AUTO.ERROR,               1,0,1) : (AUTO.ERROR               , AUTO.PREVIOUS            ),
-      (AUTO.ERROR,               1,1,0) : (AUTO.ERROR               , AUTO.PREVIOUS            ),
-      (AUTO.ERROR,               1,1,1) : (AUTO.ERROR               , AUTO.PREVIOUS            )
+      (AUTO.IDLE,                0,0,0) : (AUTO.IDLE                , ERR.NONE                ),
+      (AUTO.IDLE,                0,0,1) : (AUTO.DEST_IN_SIGHT       , ERR.NONE                ),
+      (AUTO.IDLE,                0,1,0) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
+      (AUTO.IDLE,                0,1,1) : (AUTO.OBS_AVOIDANCE       , ERR.NONE                ),
+      (AUTO.IDLE,                1,0,0) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
+      (AUTO.IDLE,                1,0,1) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
+      (AUTO.IDLE,                1,1,0) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
+      (AUTO.IDLE,                1,1,1) : (AUTO.ERROR               , ERR.ERR_STUPID          ),
+      (AUTO.DEST_IN_SIGHT,       0,0,0) : (AUTO.DEST_SEARCH         , ERR.NONE                ),
+      (AUTO.DEST_IN_SIGHT,       0,0,1) : (AUTO.DEST_IN_SIGHT       , ERR.NONE                ),
+      (AUTO.DEST_IN_SIGHT,       0,1,0) : (AUTO.OBS_BACKTRACK       , ERR.NONE                ),
+      (AUTO.DEST_IN_SIGHT,       0,1,1) : (AUTO.OBS_AVOIDANCE       , ERR.NONE                ),
+      (AUTO.DEST_IN_SIGHT,       1,0,0) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
+      (AUTO.DEST_IN_SIGHT,       1,0,1) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
+      (AUTO.DEST_IN_SIGHT,       1,1,0) : (AUTO.ERROR               , ERR.ERR_DYNAMIC_OBSTACLE),
+      (AUTO.DEST_IN_SIGHT,       1,1,1) : (AUTO.ERROR               , ERR.ERR_DYNAMIC_OBSTACLE),
+      (AUTO.OBS_AVOIDANCE,       0,0,0) : (AUTO.DEST_SEARCH         , ERR.NONE                ),
+      (AUTO.OBS_AVOIDANCE,       0,0,1) : (AUTO.DEST_IN_SIGHT       , ERR.NONE                ),
+      (AUTO.OBS_AVOIDANCE,       0,1,0) : (AUTO.OBS_BACKTRACK       , ERR.NONE                ),
+      (AUTO.OBS_AVOIDANCE,       0,1,1) : (AUTO.OBS_AVOIDANCE       , ERR.NONE                ),
+      (AUTO.OBS_AVOIDANCE,       1,0,0) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
+      (AUTO.OBS_AVOIDANCE,       1,0,1) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
+      (AUTO.OBS_AVOIDANCE,       1,1,0) : (AUTO.OBS_BACKTRACK       , ERR.NONE                ),
+      (AUTO.OBS_AVOIDANCE,       1,1,1) : (AUTO.OBS_CUTTING_CORNER  , ERR.NONE                ),
+      (AUTO.OBS_BACKTRACK,       0,0,0) : (AUTO.DEST_SEARCH         , ERR.NONE                ),
+      (AUTO.OBS_BACKTRACK,       0,0,1) : (AUTO.OBS_RE_AVOIDANCE    , ERR.NONE                ),
+      (AUTO.OBS_BACKTRACK,       0,1,0) : (AUTO.OBS_BACKTRACK       , ERR.NONE                ),
+      (AUTO.OBS_BACKTRACK,       0,1,1) : (AUTO.OBS_BACKTRACK       , ERR.NONE                ),
+      (AUTO.OBS_BACKTRACK,       1,0,0) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
+      (AUTO.OBS_BACKTRACK,       1,0,1) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
+      (AUTO.OBS_BACKTRACK,       1,1,0) : (AUTO.OBS_BACKTRACK       , ERR.NONE                ),
+      (AUTO.OBS_BACKTRACK,       1,1,1) : (AUTO.OBS_BACKTRACK       , ERR.NONE                ),
+      (AUTO.OBS_RE_AVOIDANCE,    0,0,0) : (AUTO.DEST_SEARCH         , ERR.NONE                ),
+      (AUTO.OBS_RE_AVOIDANCE,    0,0,1) : (AUTO.OBS_RE_AVOIDANCE    , ERR.NONE                ),
+      (AUTO.OBS_RE_AVOIDANCE,    0,1,0) : (AUTO.OBS_BACKTRACK       , ERR.NONE                ),
+      (AUTO.OBS_RE_AVOIDANCE,    0,1,1) : (AUTO.OBS_RE_AVOIDANCE    , ERR.NONE                ),
+      (AUTO.OBS_RE_AVOIDANCE,    1,0,0) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
+      (AUTO.OBS_RE_AVOIDANCE,    1,0,1) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
+      (AUTO.OBS_RE_AVOIDANCE,    1,1,0) : (AUTO.ERROR               , ERR.ERR_UNABLE_TO_AVOID ),
+      (AUTO.OBS_RE_AVOIDANCE,    1,1,1) : (AUTO.OBS_CUTTING_CORNER  , ERR.NONE                ),
+      (AUTO.OBS_CUTTING_CORNER,  0,0,0) : (AUTO.OBS_CUTTING_CORNER  , ERR.NONE                ),
+      (AUTO.OBS_CUTTING_CORNER,  0,0,1) : (AUTO.DEST_IN_SIGHT       , ERR.NONE                ),
+      (AUTO.OBS_CUTTING_CORNER,  0,1,0) : (AUTO.OBS_CUTTING_CORNER  , ERR.NONE                ),
+      (AUTO.OBS_CUTTING_CORNER,  0,1,1) : (AUTO.OBS_AVOIDANCE       , ERR.NONE                ),
+      (AUTO.OBS_CUTTING_CORNER,  1,0,0) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
+      (AUTO.OBS_CUTTING_CORNER,  1,0,1) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
+      (AUTO.OBS_CUTTING_CORNER,  1,1,0) : (AUTO.OBS_CUTTING_CORNER  , ERR.NONE                ),
+      (AUTO.OBS_CUTTING_CORNER,  1,1,1) : (AUTO.OBS_CUTTING_CORNER  , ERR.NONE                ),
+      (AUTO.DEST_SEARCH,         0,0,0) : (AUTO.DEST_SEARCH         , ERR.NONE                ),
+      (AUTO.DEST_SEARCH,         0,0,1) : (AUTO.DEST_IN_SIGHT       , ERR.NONE                ),
+      (AUTO.DEST_SEARCH,         0,1,0) : (AUTO.DEST_SEARCH         , ERR.NONE                ),
+      (AUTO.DEST_SEARCH,         0,1,1) : (AUTO.OBS_AVOIDANCE       , ERR.NONE                ),
+      (AUTO.DEST_SEARCH,         1,0,0) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
+      (AUTO.DEST_SEARCH,         1,0,1) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
+      (AUTO.DEST_SEARCH,         1,1,0) : (AUTO.ERROR               , ERR.ERR_UNABLE_TO_SEARCH),
+      (AUTO.DEST_SEARCH,         1,1,1) : (AUTO.ERROR               , ERR.ERR_UNABLE_TO_SEARCH),
+      (AUTO.ERROR,               0,0,0) : (AUTO.ERROR               , ERR.PREVIOUS            ),
+      (AUTO.ERROR,               0,0,1) : (AUTO.ERROR               , ERR.PREVIOUS            ),
+      (AUTO.ERROR,               0,1,0) : (AUTO.ERROR               , ERR.PREVIOUS            ),
+      (AUTO.ERROR,               0,1,1) : (AUTO.ERROR               , ERR.PREVIOUS            ),
+      (AUTO.ERROR,               1,0,0) : (AUTO.ERROR               , ERR.PREVIOUS            ),
+      (AUTO.ERROR,               1,0,1) : (AUTO.ERROR               , ERR.PREVIOUS            ),
+      (AUTO.ERROR,               1,1,0) : (AUTO.ERROR               , ERR.PREVIOUS            ),
+      (AUTO.ERROR,               1,1,1) : (AUTO.ERROR               , ERR.PREVIOUS            )
     }  
+
+  def defineNavStateTransitionMatrix(self):
+    self.navStateTrans = {
+      #Refer to file eod_nav/NavState.ods
+      (NAV.IDLE,           1,0) : (NAV.MANUAL_MODE    , ERR.NONE                     ),
+      (NAV.IDLE,           2,0) : (NAV.TRACKING_ONLY  , ERR.NONE                     ),
+      (NAV.IDLE,           3,0) : (NAV.ERROR          , ERR.ERR_UNKNOWN_DESTINATION  ),
+      (NAV.IDLE,           1,1) : (NAV.MANUAL_MODE    , ERR.NONE                     ),
+      (NAV.IDLE,           2,1) : (NAV.TRACKING_ONLY  , ERR.NONE                     ),
+      (NAV.IDLE,           3,1) : (NAV.ERROR          , ERR.ERR_UNKNOWN_DESTINATION  ),
+      (NAV.TRACKING_ONLY,  1,0) : (NAV.MANUAL_MODE    , ERR.NONE                     ),
+      (NAV.TRACKING_ONLY,  2,0) : (NAV.TRACKING_ONLY  , ERR.NONE                     ),
+      (NAV.TRACKING_ONLY,  3,0) : (NAV.AUTO_MODE      , ERR.NONE                     ),
+      (NAV.TRACKING_ONLY,  1,1) : (NAV.MANUAL_MODE    , ERR.NONE                     ),
+      (NAV.TRACKING_ONLY,  2,1) : (NAV.TRACKING_ONLY  , ERR.NONE                     ),
+      (NAV.TRACKING_ONLY,  3,1) : (NAV.AUTO_MODE      , ERR.NONE                     ),
+      (NAV.AUTO_MODE,      1,0) : (NAV.ERROR          , ERR.ERR_ROBOT_LOST           ),
+      (NAV.AUTO_MODE,      2,0) : (NAV.ERROR          , ERR.ERR_ROBOT_LOST           ),
+      (NAV.AUTO_MODE,      3,0) : (NAV.ERROR          , ERR.ERR_ROBOT_LOST           ),
+      (NAV.AUTO_MODE,      1,1) : (NAV.IDLE           , ERR.NONE                     ),
+      (NAV.AUTO_MODE,      2,1) : (NAV.IDLE           , ERR.NONE                     ),
+      (NAV.AUTO_MODE,      3,1) : (NAV.IDLE           , ERR.NONE                     ),
+      (NAV.MANUAL_MODE,    1,0) : (NAV.MANUAL_MODE    , ERR.NONE                     ),
+      (NAV.MANUAL_MODE,    2,0) : (NAV.TRACKING_ONLY  , ERR.NONE                     ),
+      (NAV.MANUAL_MODE,    3,0) : (NAV.ERROR          , ERR.ERR_UNKNOWN_DESTINATION  ),
+      (NAV.MANUAL_MODE,    1,1) : (NAV.MANUAL_MODE    , ERR.NONE                     ),
+      (NAV.MANUAL_MODE,    2,1) : (NAV.TRACKING_ONLY  , ERR.NONE                     ),
+      (NAV.MANUAL_MODE,    3,1) : (NAV.ERROR          , ERR.ERR_UNKNOWN_DESTINATION  ),
+      (NAV.ERROR,          1,0) : (NAV.MANUAL_MODE    , ERR.NONE                     ),
+      (NAV.ERROR,          2,0) : (NAV.TRACKING_ONLY  , ERR.NONE                     ),
+      (NAV.ERROR,          3,0) : (NAV.ERROR          , ERR.ERR_UNKNOWN_DESTINATION  ),
+      (NAV.ERROR,          1,1) : (NAV.MANUAL_MODE    , ERR.NONE                     ),
+      (NAV.ERROR,          2,1) : (NAV.TRACKING_ONLY  , ERR.NONE                     ),
+      (NAV.ERROR,          3,1) : (NAV.ERROR          , ERR.ERR_UNKNOWN_DESTINATION  )
+    }
+
+  def definePrintNames(self):
+    self.autoStatePrintNames = [
+      "IDLE"              ,   #Auto mode has not started
+      "DEST_IN_SIGHT"     ,   #Normal navigation mode
+      "OBS_AVOIDANCE"     ,   #We have sighted an obstacle at 3m distance and want to avoid it
+      "OBS_BACKTRACK"     ,   #We have lost the destination when we tried to avoid, we are gonna backtrack
+      "OBS_RE_AVOIDANCE"  ,   #we have backtracked and we will try to avoid it again now
+      "OBS_CUTTING_CORNER",   #The robot just close to avoiding an obstacle, and tries to cut corner now
+      "DEST_SEARCH"       ,   #We have lost the destination, go into destination search mode
+      "DEST_REACHED"      ,   #The destination has been reached
+      "ERROR"]
     
+    self.navStatePrintNames = [
+      "IDLE"          ,
+      "TRACKING_ONLY" ,
+      "AUTO_MODE"     ,  
+      "MANUAL_MODE"   ,
+      "ERROR"   ]                                 
+    self.errPrintNames = [
+      "ERR_ILLEGAL"             ,    #Illegal Autonomous mode. Comes when ultrasonic is < 0.5 but also > 3.
+      "ERR_STUPID"              ,    #Someone does crazy things
+      "ERR_DYNAMIC_OBSTACLE"    ,    #Dynamic obstacles      
+      "ERR_UNABLE_TO_AVOID"     ,    #Unable to avoid the obstacle after 1 retry
+      "ERR_UNABLE_TO_SEARCH"    ,    #Unable to locate the destination after search
+      "ERR_TIMEOUT"             ,    #Timeout error
+      "ERR_UNKNOWN_DESTINATION" ,    #Asked robot to move autonomously without giving destination
+      "ERR_ROBOT_LOST"          ,    #The robot is lost.
+      "NONE"                    ,    #No errors. Default value of any error state
+      "PREVIOUS" ]                   #Same error as previous 
+    self.uiPrintNames = [
+      "UI_READY"      ,
+      "IDLE_OR_MANUAL",
+      "TRACKING_ONLY",
+      "AUTO_MODE"]
+    self.autoOutpuPrintNames = [
+      "ROBOT_LOST",
+      "REACHED_DESTINATION",
+      "STILL_RUNNING",
+      "SOME_OTHER_ERROR"]                                
+
   
 if __name__ == "__main__":  
   nav = eodNav()
-  r = rospy.Rate(20)
+  r = rospy.Rate(20) #Run every 50 ms
   while not rospy.is_shutdown():
     nav.navHandler()
     r.sleep()
