@@ -15,6 +15,7 @@ ros::Publisher pub;
 void 
 cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
 {
+	ROS_INFO("PCL Processing Started");
 	sensor_msgs::PointCloud2 output;
 	// Convert the sensor_msgs/PointCloud2 data to pcl/PointCloud
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloudPtr(new pcl::PointCloud<pcl::PointXYZ>);
@@ -28,6 +29,8 @@ cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
 	sor.filter (*cloud_filtered);
 	pcl::toROSMsg(*cloud_filtered, output);
 	pub.publish(output);
+	ROS_INFO("PCL Processing Ended");
+
 }
 
 int main (int argc, char** argv)
