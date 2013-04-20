@@ -63,8 +63,7 @@ USR = enum(
 AUTO_OUTPUT =enum(
   ROBOT_LOST = 0,
   REACHED_DESTINATION = 1,
-  STILL_RUNNING = 2,
-  SOME_OTHER_ERROR = 3)
+  STILL_RUNNING = 2)
 
 
 class AutoNavError(Exception):
@@ -183,10 +182,10 @@ class eodNav:
     self.stLinVel = rospy.get_param("~st_lin", 0.4)
     self.rotLinVel = rospy.get_param("~rot_lin", 0.4)
     self.rotAngVel = rospy.get_param("~rot_ang", 0.2) 
-    self.OBS_AVOID_DIST = rospy.get_param("~obs_avoid_dist", 2.8)   
-    self.OBS_STOP_DIST = rospy.get_param("~obs_stop_dist", 0.8)
-    self.obsStLinVel = rospy.get_param("~obs_st_lin", 0.2)
-    self.obsRotLinVel = rospy.get_param("~obs_rot_lin", 0.1)
+    self.OBS_AVOID_DIST = rospy.get_param("~obs_avoid_dist", 280)   
+    self.OBS_STOP_DIST = rospy.get_param("~obs_stop_dist", 80)
+    self.obsStLinVel = rospy.get_param("~obs_st_lin", 0.3)
+    self.obsRotLinVel = rospy.get_param("~obs_rot_lin", 0.3)
     self.obsRotAngVel = rospy.get_param("~obs_rot_ang", 0.1) 
     #Reset the parameters so that it would be easily visible to debug
     rospy.set_param("~st_lin_vel", self.stLinVel)
@@ -401,9 +400,10 @@ class eodNav:
     #Stop trying after 25 s
     if self.backTrackCount*self.TIME_STEP >= 25000:
       raise AutoNavError(ERR.ERR_TIMEOUT, "Backtracking timeout")
-    self.vel.linVelPcent = self.obsStLinVel
+    self.vel.linVelPcent = -self.obsStLinVel
     self.vel.angVelPcent = 0.0
     self.backTrackCount += 1 #Time increment every TIME_STEP    
+    self.robotCmdPub.publish(self.vel) 
   
   
   def autoObsReAvoidance(self):
@@ -761,30 +761,45 @@ class eodNav:
       (NAV.IDLE,           1,1) : (NAV.MANUAL_MODE    , ERR.NONE                     ),
       (NAV.IDLE,           2,1) : (NAV.TRACKING_ONLY  , ERR.NONE                     ),
       (NAV.IDLE,           3,1) : (NAV.ERROR          , ERR.ERR_UNKNOWN_DESTINATION  ),
+      (NAV.IDLE,           1,2) : (NAV.MANUAL_MODE    , ERR.NONE                     ),
+      (NAV.IDLE,           2,2) : (NAV.TRACKING_ONLY  , ERR.NONE                     ),
+      (NAV.IDLE,           3,2) : (NAV.ERROR          , ERR.ERR_UNKNOWN_DESTINATION  ),
       (NAV.TRACKING_ONLY,  1,0) : (NAV.MANUAL_MODE    , ERR.NONE                     ),
       (NAV.TRACKING_ONLY,  2,0) : (NAV.TRACKING_ONLY  , ERR.NONE                     ),
       (NAV.TRACKING_ONLY,  3,0) : (NAV.AUTO_MODE      , ERR.NONE                     ),
       (NAV.TRACKING_ONLY,  1,1) : (NAV.MANUAL_MODE    , ERR.NONE                     ),
       (NAV.TRACKING_ONLY,  2,1) : (NAV.TRACKING_ONLY  , ERR.NONE                     ),
       (NAV.TRACKING_ONLY,  3,1) : (NAV.AUTO_MODE      , ERR.NONE                     ),
+      (NAV.TRACKING_ONLY,  1,2) : (NAV.MANUAL_MODE    , ERR.NONE                     ),
+      (NAV.TRACKING_ONLY,  2,2) : (NAV.TRACKING_ONLY  , ERR.NONE                     ),
+      (NAV.TRACKING_ONLY,  3,2) : (NAV.AUTO_MODE      , ERR.NONE                     ),
       (NAV.AUTO_MODE,      1,0) : (NAV.ERROR          , ERR.ERR_ROBOT_LOST           ),
       (NAV.AUTO_MODE,      2,0) : (NAV.ERROR          , ERR.ERR_ROBOT_LOST           ),
       (NAV.AUTO_MODE,      3,0) : (NAV.ERROR          , ERR.ERR_ROBOT_LOST           ),
       (NAV.AUTO_MODE,      1,1) : (NAV.IDLE           , ERR.NONE                     ),
       (NAV.AUTO_MODE,      2,1) : (NAV.IDLE           , ERR.NONE                     ),
       (NAV.AUTO_MODE,      3,1) : (NAV.IDLE           , ERR.NONE                     ),
+      (NAV.AUTO_MODE,      1,2) : (NAV.MANUAL_MODE    , ERR.NONE                     ),
+      (NAV.AUTO_MODE,      2,2) : (NAV.AUTO_MODE      , ERR.NONE                     ),
+      (NAV.AUTO_MODE,      3,2) : (NAV.AUTO_MODE      , ERR.NONE                     ),
       (NAV.MANUAL_MODE,    1,0) : (NAV.MANUAL_MODE    , ERR.NONE                     ),
       (NAV.MANUAL_MODE,    2,0) : (NAV.TRACKING_ONLY  , ERR.NONE                     ),
       (NAV.MANUAL_MODE,    3,0) : (NAV.ERROR          , ERR.ERR_UNKNOWN_DESTINATION  ),
       (NAV.MANUAL_MODE,    1,1) : (NAV.MANUAL_MODE    , ERR.NONE                     ),
       (NAV.MANUAL_MODE,    2,1) : (NAV.TRACKING_ONLY  , ERR.NONE                     ),
       (NAV.MANUAL_MODE,    3,1) : (NAV.ERROR          , ERR.ERR_UNKNOWN_DESTINATION  ),
+      (NAV.MANUAL_MODE,    1,2) : (NAV.MANUAL_MODE    , ERR.NONE                     ),
+      (NAV.MANUAL_MODE,    2,2) : (NAV.TRACKING_ONLY  , ERR.NONE                     ),
+      (NAV.MANUAL_MODE,    3,2) : (NAV.ERROR          , ERR.ERR_UNKNOWN_DESTINATION  ),
       (NAV.ERROR,          1,0) : (NAV.MANUAL_MODE    , ERR.NONE                     ),
       (NAV.ERROR,          2,0) : (NAV.TRACKING_ONLY  , ERR.NONE                     ),
       (NAV.ERROR,          3,0) : (NAV.ERROR          , ERR.ERR_UNKNOWN_DESTINATION  ),
       (NAV.ERROR,          1,1) : (NAV.MANUAL_MODE    , ERR.NONE                     ),
       (NAV.ERROR,          2,1) : (NAV.TRACKING_ONLY  , ERR.NONE                     ),
-      (NAV.ERROR,          3,1) : (NAV.ERROR          , ERR.ERR_UNKNOWN_DESTINATION  )
+      (NAV.ERROR,          3,1) : (NAV.ERROR          , ERR.ERR_UNKNOWN_DESTINATION  ),
+      (NAV.ERROR,          1,2) : (NAV.MANUAL_MODE    , ERR.NONE                     ),
+      (NAV.ERROR,          2,2) : (NAV.TRACKING_ONLY  , ERR.NONE                     ),
+      (NAV.ERROR,          3,2) : (NAV.ERROR          , ERR.ERR_UNKNOWN_DESTINATION  )
     }
 
   def definePrintNames(self):
@@ -824,8 +839,7 @@ class eodNav:
     self.autoOutputPrintNames = [
       "ROBOT_LOST",
       "REACHED_DESTINATION",
-      "STILL_RUNNING",
-      "SOME_OTHER_ERROR"]                                
+      "STILL_RUNNING"]                                
 
   
 if __name__ == "__main__":  
