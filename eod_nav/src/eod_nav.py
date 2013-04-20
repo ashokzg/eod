@@ -109,11 +109,11 @@ class eodNav:
   #===============================================================
   def __init__(self):
     rospy.init_node("nav")
-    print "EOD Navigation Initializing"
+    rospy.logwarn("EOD Navigation Initializing")
     self.highLevelInits()
     self.lowLevelInits()
-    self.initSubAndPub()    
     self.updateParameters()
+    self.initSubAndPub()    
     self.initCamParams()
     
     
@@ -151,7 +151,7 @@ class eodNav:
   def initCamParams(self):    
     #Initialize values
     try:
-      img = rospy.wait_for_message("camera/camera_info", CameraInfo, 2.0)
+      img = rospy.wait_for_message(self.camInfoName, CameraInfo, 2.0)
       self.imgWidth = img.width
       self.imgHeight = img.height
     except rospy.ROSException:
@@ -186,7 +186,8 @@ class eodNav:
     self.OBS_STOP_DIST = rospy.get_param("~obs_stop_dist", 80)
     self.obsStLinVel = rospy.get_param("~obs_st_lin", 0.3)
     self.obsRotLinVel = rospy.get_param("~obs_rot_lin", 0.3)
-    self.obsRotAngVel = rospy.get_param("~obs_rot_ang", 0.1) 
+    self.obsRotAngVel = rospy.get_param("~obs_rot_ang", 0.1)
+    self.cameraName = rospy.get_param("/eod_cam", "camera/image_raw") 
     #Reset the parameters so that it would be easily visible to debug
     rospy.set_param("~st_lin_vel", self.stLinVel)
     rospy.set_param("~rot_lin_vel", self.rotLinVel)
@@ -196,7 +197,10 @@ class eodNav:
     rospy.set_param("~obs_st_lin", self.obsStLinVel)
     rospy.set_param("~obs_rot_lin", self.obsRotLinVel)
     rospy.set_param("~obs_rot_ang", self.obsRotAngVel)
-    print "Velocity parameters", self.stLinVel, self.rotLinVel, self.rotAngVel
+    rospy.set_param("/eod_cam", self.cameraName)    
+    self.camInfoName = '/' + self.cameraName.split('/')[0] + '/camera_info'
+    rospy.logwarn("Camera Name " + self.camInfoName)
+    #print "Velocity parameters", self.stLinVel, self.rotLinVel, self.rotAngVel
      
     
   def spin(self):
@@ -243,10 +247,10 @@ class eodNav:
         self.autoModeStateHandler()
       except AutoNavError as e:
         if e.errId <= ERR.ERR_DYNAMIC_OBSTACLE:
-          print "Something really stupid has happened"
+          rospy.logerr("Something really stupid has happened")
         else:
-          print "Poor robot lost it's destination"
-        print "Auto Mode error:", self.errPrintNames[e.errId], e.msg
+          rospy.logerr("Poor robot lost it's destination")
+        rospy.logerr("Auto Mode error:"  + self.errPrintNames[e.errId] + " " + e.msg)
         self.errStatePub.publish(e.errId)
         #Setting this will make the state go to Manual mode in the next iteration
         self.robotResp = AUTO_OUTPUT.ROBOT_LOST
@@ -278,8 +282,8 @@ class eodNav:
   def errorStateHandler(self):
     #Wait for UI to take action
     if self.navStateChange == True:
-      print "Navigation Error occurred!", self.errPrintNames[self.navErrId]
-      print "Waiting for UI to take action"      
+      rospy.logerr("Navigation Error occurred!" + self.errPrintNames[self.navErrId])
+      rospy.logerr("Waiting for UI to take action")      
       self.errStatePub.publish(self.navErrId)    
 
 
@@ -433,7 +437,7 @@ class eodNav:
   
   
   def autoObsCuttingCorner(self):
-    print "Boss please implement cutting corner"
+    rospy.logerr("Boss please implement cutting corner")
     self.robotMove(self.STOP)
     pass
   
@@ -464,9 +468,9 @@ class eodNav:
   
   
   def autoDestReached(self):
-    print "Yay! Destination reached"
+    rospy.logwarn("Yay! Destination reached")
     self.robotMove(self.STOP)
-    print "Please implement this function boss"
+    rospy.logwarn("Please implement destination reached fucntion boss")
     
     
   def autoError(self):    
@@ -521,7 +525,7 @@ class eodNav:
       if self.prevAutoState != self.autoState:
         stateChange = True
     except KeyError:
-      print "Auto mode key error. Should not have happened"      
+      rospy.logfatal("Auto mode key error. Should not have happened")      
     return stateChange
   
   
@@ -613,14 +617,19 @@ class eodNav:
   #===============================================================
 
   def printNavStatus(self):
+    s = ""
     #print data.ultra_left, data.ultra_centre, data.ultra_right,
-    print "Nav:", self.navStatePrintNames[self.navState], "Auto:", self.autoStatePrintNames[self.autoState],
-    print "Dest:", self.dest.destPresent,
-    print "Obs Avoid:", [self.OBS_AVOID & self.OBS_L, self.OBS_AVOID & self.OBS_C, self.OBS_AVOID & self.OBS_R],
-    print "Obs Stop:", [self.OBS_STOP & self.OBS_L, self.OBS_STOP & self.OBS_C, self.OBS_STOP & self.OBS_R],
+    s += "Nav: " + self.navStatePrintNames[self.navState] + " Auto: " + self.autoStatePrintNames[self.autoState]
+    s += " Dest: " + str(self.dest.destPresent)
+    s += " Obs Avoid: " + str([self.OBS_AVOID & self.OBS_L, self.OBS_AVOID & self.OBS_C, self.OBS_AVOID & self.OBS_R])
+    s += " Obs Stop: " + str([self.OBS_STOP & self.OBS_L, self.OBS_STOP & self.OBS_C, self.OBS_STOP & self.OBS_R])
     if DEBUG == True:
-      print "Ultra Distance",
-      print ["%0.3f" %i for i in self.dist]
+      s += " Ultra Distance "
+      s += "%0.2f " %self.dist[0]
+      s += "%0.2f " %self.dist[1]
+      s += "%0.2f " %self.dist[2]
+      #print s
+      rospy.loginfo(s)
       self.navDebug.autoState = self.autoStatePrintNames[self.autoState]
       self.navDebug.navState = self.navStatePrintNames[self.navState]
       self.navDebug.obsAvoid = [self.OBS_AVOID & self.OBS_L, (self.OBS_AVOID & self.OBS_C)/self.OBS_C, (self.OBS_AVOID & self.OBS_R)/self.OBS_R]
@@ -848,4 +857,4 @@ if __name__ == "__main__":
   while not rospy.is_shutdown():
     nav.navHandler()
     r.sleep()
-  print "Exiting EOD Navigation! Bye Bye"
+  rospy.logwarn("Exiting EOD Navigation! Bye Bye")

@@ -42,6 +42,8 @@ using tld::Settings;
 #include <cv_bridge/cv_bridge.h>
 //Include some useful constants for image encoding. Refer to: http://www.ros.org/doc/api/sensor_msgs/html/namespacesensor__msgs_1_1image__encodings.html for more info.
 #include <sensor_msgs/image_encodings.h>
+
+#include <std_msgs/UInt32.h>
 //Include headers for OpenCV Image processing
 #include <opencv2/imgproc/imgproc.hpp>
 //Include headers for OpenCV GUI handling
@@ -55,6 +57,7 @@ ros::Publisher destPub;
 
 
 static bool tldInit = false;
+static int navState = 0; //Corresponds to IDLE state
 
 //Store all constants for image encodings in the enc namespace to be used later.
 namespace enc = sensor_msgs::image_encodings;
@@ -86,14 +89,27 @@ void imageCallback(const sensor_msgs::ImageConstPtr& original_image)
     	tldInit = true;
     	userDest.destPresent = false;
     }
-    else if(tldInit == true) //Do not process until it is initialized atleast once
+    //Do not process until it is initialized atleast once. Navigation must be in either tracking or autonomous mode
+    else if(tldInit == true && ((navState == 1) || (navState == 2))) 
     {
-    	ROS_INFO("Tracking");
     	destination = mainTld->destTrack(&(cv_ptr->image));
     }
-
-    destPub.publish(destination);
-
+    
+    if(navState == 1 || navState == 2)
+    {
+      //Publish the destination rectange
+      destPub.publish(destination);
+    }
+    else
+    {
+      //Publish default value
+      destination.destPresent = 0;
+      destination.destX = 0;
+      destination.destY = 0;
+      destination.destWidth = 0;
+      destination.destHeight = 0;
+      destPub.publish(destination);        
+    }
 }
 
 void userSelectedDestination(const OpenTLD::Dest::ConstPtr& d)
@@ -104,6 +120,11 @@ void userSelectedDestination(const OpenTLD::Dest::ConstPtr& d)
   userDest.destY = d->destY;
   userDest.destHeight = d->destHeight;
   userDest.destWidth = d->destWidth;
+}
+
+void navStateCb(const std_msgs::UInt32::ConstPtr& s)
+{
+  navState = s->data;  
 }
 
 int main(int argc, char **argv)
@@ -125,14 +146,16 @@ int main(int argc, char **argv)
 	destination.destHeight = 0;
 	destPub.publish(destination);
 	ros::spinOnce();
-    
-    userDest.destPresent = false;
+	std::string camName;
+  nh.param<std::string>("/eod_cam", camName, "camera/image_raw");  
+  userDest.destPresent = false;
 
 	//Initialize the image transport subscriber
 	image_transport::ImageTransport it(nh);
-	image_transport::Subscriber imgSub = it.subscribe("camera/image_raw", 1, imageCallback);
+	image_transport::Subscriber imgSub = it.subscribe(camName, 1, imageCallback);
 
 	ros::Subscriber userDestSub = nh.subscribe("/UserDestination", 1000, userSelectedDestination);
+	ros::Subscriber navStateSub = nh.subscribe("/Nav_State", 1000, navStateCb);
 
 	/*---------------------------------------------------------
 	 *    START OF TLD
@@ -140,12 +163,12 @@ int main(int argc, char **argv)
 	mainTld = new Main();
 	Config config;
 
-	printf("Came here\n");
+	ROS_WARN("Start of TLD\n");
 
 
 	if(config.init(argc, argv) == PROGRAM_EXIT)
 	{
-		printf("Unfortunate Exit");
+		ROS_ERROR("TLD Unfortunate Exit");
 		return EXIT_FAILURE;
 	}
 

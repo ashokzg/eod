@@ -48,7 +48,7 @@ void Main::doWork(OpenTLD::Dest userDest, Mat img)
 
     if(userDest.destPresent == true)
     {
-    	printf("Came here");
+    	  ROS_WARN("Starting tracking");
 
         if(initialBB == NULL)
         {
@@ -60,10 +60,8 @@ void Main::doWork(OpenTLD::Dest userDest, Mat img)
         initialBB[2] = userDest.destWidth;
         initialBB[3] = userDest.destHeight;
         userDest.destPresent = false;
-        printf("W, H: %d %d\n", initialBB[2], initialBB[3]);
+        ROS_WARN("W, H: %d %d\n", initialBB[2], initialBB[3]);
     }
-
-
 
     if(printResults != NULL)
     {
@@ -78,13 +76,13 @@ void Main::doWork(OpenTLD::Dest userDest, Mat img)
     {
         Rect bb = tldArrayToRect(initialBB);
 
-        printf("\nStarting at %d %d %d %d\n", bb.x, bb.y, bb.width, bb.height);
+        ROS_WARN("\nTLD Starting at %d %d %d %d\n", bb.x, bb.y, bb.width, bb.height);
 
         tld->selectObject(grey, &bb);
         skipProcessingOnce = true;
         reuseFrameOnce = true;
     }
-    ROS_INFO("Initialized");
+    ROS_WARN("TLD Initialized");
 }
 
 
