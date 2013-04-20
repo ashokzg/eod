@@ -1,17 +1,13 @@
 <!--xml-->
 <launch>
-  <node ns="eodCam/left" pkg="uvc_camera" type="camera_node" name="left_camera" output="screen">
+  <node ns="eodCam" pkg="uvc_camera" type="stereo_node" name="stereo" output="screen">
     <param name="width" type="int" value="640" />
     <param name="height" type="int" value="480" />
     <param name="fps" type="int" value="30" />
     <param name="frame" type="string" value="webcam" />
-    <param name="device" type="string" value="/dev/video0" />
+    <param name="left/device" type="string" value="/dev/video0" />
+    <param name="right/device" type="string" value="/dev/video1" />
   </node>
-  <node ns="eodCam/right" pkg="uvc_camera" type="camera_node" name="right_camera" output="screen">
-    <param name="width" type="int" value="640" />
-    <param name="height" type="int" value="480" />
-    <param name="fps" type="int" value="30" />
-    <param name="frame" type="string" value="webcam" />
-    <param name="device" type="string" value="/dev/video1" />
-  </node>
+  <rosparam command="load" file="$(find stereoCalib)/launch/stereoImgProc.yaml" />
+  <node ns="eodCam" pkg="stereo_image_proc" type="stereo_image_proc" name="stereo_image_proc"/>
 </launch>
