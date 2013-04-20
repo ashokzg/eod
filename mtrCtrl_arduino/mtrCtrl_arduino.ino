@@ -1,14 +1,14 @@
 /* 
  * MRSD Project Blitzkrieg Controller
- * April 1st, 2013
+ * April 20th, 2013
  */
 
 /*------------------------------------------------------*/
 //Motor Ctrl independantly in Arduino - Done
 //Ros Simulation with Publisher       - Done
 //Integration with Custom Msg         - Done
-//-----TBD------
 //Ultrasonic
+//-----TBD------
 //Encoder
 //
 /*------------------------------------------------------*/
@@ -17,6 +17,7 @@
 #include <ros/time.h>
 #include <vel_msgs/Velocity.h>
 #include <ultrasonic/Ultrasonic.h>
+#include <std_msgs/Int32.h>
 #include "DualVNH5019MotorShield.h"
 //Full Speed = 400 : 0-255 for Analog Write mapped to 400
 
@@ -24,32 +25,32 @@
 #define ULTRA_FRONT A1
 #define ULTRA_RIGHT A0
 #define ULTRA_LEFT A2
-#define ENC_LEFT 2
-#define ENC_RIGHT 3
+#define ENC_LEFT 3
+#define ENC_RIGHT 2
 #define PROBE_PIN 8
 
-#define Circum 35.0 //circumference of wheel, length per rev
-#define CPR 80 // Counts Per Revolution
-#define TCC 24 //Turning circle circumference in cm
 #define UREAD 0
 #define UPROBE_START 1
 #define UPROBE_END 2
 #define UWAIT 3
 
 // Volatile variables that can be changed inside of interrupt functions
-unsigned int RightEncoderPos;
-unsigned int LeftEncoderPos;
+unsigned int RightEncoderPos, LeftEncoderPos;
 unsigned int Lcount,Rcount;
-unsigned long LdVal = 0;
-unsigned long RdVal = 0;
+int LdVal = 0;
+int RdVal = 0;
 
 int readOrProbe = UWAIT;
 
 DualVNH5019MotorShield md;
 
 ros::NodeHandle  nh;
+
 ultrasonic::Ultrasonic us_msg;
+std_msgs::Int32 encLCount;
+
 ros::Publisher pub_range( "/ultrasound", &us_msg);
+ros::Publisher pub_enc( "/encleft", &encLCount);
 const int adc_pin = 0;
 
 char frameid[] = "/ultrasound";
@@ -69,26 +70,27 @@ float getRange_Ultrasound(int pin_num){
   return range /322.519685;   // (0.0124023437 /4) ; //cvt to meters
 }
 
-//--------------------- CHECK IF NEEDED------------------------------
-void ramp_up(int vel){
-for (int i = 0; i <= vel; i++)
-  {
-    md.setM1Speed(i);
+void updateRightEncoder(){
+ Rcount++;
+ if(Rcount%11==0)
+    {   
+		RightEncoderPos++;Rcount=0;
+		RdVal= RdVal+RightEncoderPos; 
+		RightEncoderPos=0;
+	}
   }
-}
+  
+void updateLeftEncoder(){
+Lcount++;
+if(Lcount%11==0)
+    {   
+      LeftEncoderPos++;
+      Lcount=0;
+      LdVal= LdVal+LeftEncoderPos;  
+      LeftEncoderPos=0;
+    }
 
-void ramp_down(int vel){
-for (int i = vel; i >=0; i--)
-  {
-    md.setM1Speed(i);
-  }
 }
-
-void stop_mtrs(){
-    md.setM1Speed(0);
-    md.setM2Speed(0);
-}
-//---------------------------------------------------------------------
 
 void messageCb( const vel_msgs::Velocity& vel){
   
@@ -115,9 +117,18 @@ void setup()
   nh.initNode();
   nh.subscribe(sub);
   nh.advertise(pub_range);
+
+  pinMode(ENC_RIGHT, INPUT);
+  digitalWrite(ENC_RIGHT, HIGH);
+  pinMode(ENC_LEFT, INPUT);
+  digitalWrite(ENC_LEFT, HIGH);
+  
+  //attachInterrupt(0, updateRightEncoder, RISING); 
+  //attachInterrupt(1, updateLeftEncoder, RISING);
+
 }
 
-long range_time, probe_time;
+long range_time, probe_time, enc_time;
 
 void loop()
 {  
@@ -155,5 +166,15 @@ void loop()
       readOrProbe = UPROBE_START;    
   }
 
+
+  //if(PINA)
+  //updateRightEncoder();
+  //publish the value every 25 milliseconds
+//  if(millis()>= enc_time)
+//  {
+//     encLCount.data = LdVal;
+//     pub_enc.publish(&encLCount); 
+//     enc_time = millis() + 50;
+//  }
   nh.spinOnce();
 }
