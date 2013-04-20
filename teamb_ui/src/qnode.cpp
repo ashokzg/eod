@@ -1,5 +1,6 @@
 #include "../include/qnode.hpp"
 #include "eodimg.hpp"
+#include <iostream>
 
 namespace teamb_ui {
 
@@ -29,10 +30,11 @@ bool QNode::init() {
     mode_msg = n.advertise<std_msgs::Int32>("/Mode", 1000);
     uiStatus_msg = n.advertise<std_msgs::Int32>("/UiStatus", 1000);
     dest_msg = n.advertise<Dest>("/UserDestination", 1000);
-
+	  std::string camName;
+    n.param<std::string>("/eod_cam", camName, "/camera/image_raw");  
     image_transport::ImageTransport it(n);
-    sub = it.subscribe("/camera/image_raw", 1, &QNode::imageCallback,this,image_transport::TransportHints("compressed"));
-    sub2 = it.subscribe("/camera/image_raw", 1, &QNode::imageCallback2,this,image_transport::TransportHints("compressed"));
+    sub  = it.subscribe(camName, 1, &QNode::imageCallback, this, image_transport::TransportHints("compressed"));
+    sub2 = it.subscribe(camName, 1, &QNode::imageCallback2, this, image_transport::TransportHints("compressed"));
     rect_msg = n.subscribe("/destination", 1, &QNode::sendCoord,this);
     start();
 	return true;
