@@ -11,8 +11,11 @@
   <depend package="pcl"/>
   <depend package="pcl_ros"/>
   <depend package="roscpp"/>
+  <depend package="rospy"/>  
   <depend package="sensor_msgs"/>
-
+  <export>
+    <cpp cflags=" -I${prefix}/srv_gen/cpp/include"/>
+  </export>
 </package>
 
 
