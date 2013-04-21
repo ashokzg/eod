@@ -2,6 +2,7 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <geometry_msgs/Point.h>
 #include <pcl_eod/Clusters.h>
+#include <math.h>
 // PCL specific includes
 #include <pcl/ros/conversions.h>
 #include <pcl/point_cloud.h>
@@ -17,9 +18,11 @@
 #include <pcl/features/normal_3d.h>
 #include <pcl/kdtree/kdtree.h>
 #include <pcl/segmentation/extract_clusters.h>
+#include <pcl16/point_cloud.h>
 
 ros::Publisher pub;
 ros::Publisher clusterPub;
+//pcl16::PointCloud<pcl16::PointXYZ>::Ptr cloud_removed16(new pcl16::PointCloud<pcl16::PointXYZ>);
 
 void 
 cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
@@ -33,9 +36,19 @@ cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloudPtr(new pcl::PointCloud<pcl::PointXYZ>), cloud_f (new pcl::PointCloud<pcl::PointXYZ>);
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_removed(new pcl::PointCloud<pcl::PointXYZ>);
 	pcl::fromROSMsg (*input, *cloudPtr);
-
-
 	//-----------------
+	for(unsigned int i = 0; i < cloudPtr->size(); i++)
+	{
+		if(isnan(cloudPtr->points[i].z) == false)
+		{
+			if(cloudPtr->points[i].z > 5.5)
+			{
+				cloudPtr->points[i].x = NAN;
+				cloudPtr->points[i].y = NAN;
+				cloudPtr->points[i].z = NAN;
+			}
+		}
+	}
 
 	  // Create the filtering object: downsample the dataset using a leaf size of 1cm
 	  pcl::VoxelGrid<pcl::PointXYZ> vg;
@@ -43,7 +56,11 @@ cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
 	  vg.setInputCloud (cloudPtr);
 	  vg.setLeafSize (0.03f, 0.03f, 0.03f);
 	  vg.filter (*cloud_filtered);
+	  //cloud_filtered = cloudPtr;
 	 // std::cout << "PointCloud after filtering has: " << cloud_filtered->points.size ()  << " data points." << std::endl; //*
+
+
+
 
 	  // Create the segmentation object for the planar model and set all the parameters
 	  pcl::SACSegmentation<pcl::PointXYZ> seg;
@@ -135,7 +152,8 @@ cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
 	cluster.header.stamp = ros::Time::now();
 
 
-	pcl::toROSMsg(*cloud_cluster, output);
+	//pcl::toROSMsg(*cloud_cluster, output);
+	pcl::toROSMsg(*cloudPtr, output);
 	output.header.frame_id = "camera";
 	pub.publish(output);
 	clusterPub.publish(cluster);
