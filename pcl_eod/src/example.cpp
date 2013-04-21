@@ -18,7 +18,22 @@
 #include <pcl/features/normal_3d.h>
 #include <pcl/kdtree/kdtree.h>
 #include <pcl/segmentation/extract_clusters.h>
-#include <pcl16/point_cloud.h>
+#include <pcl/filters/extract_indices.h>
+#include <pcl/sample_consensus/ransac.h>
+#include <pcl/sample_consensus/sac_model_plane.h>
+#include <pcl/sample_consensus/sac_model_sphere.h>
+#include <boost/thread/thread.hpp>
+
+#include <pcl/console/parse.h>
+#include <pcl/filters/extract_indices.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/point_types.h>
+#include <pcl/sample_consensus/ransac.h>
+#include <pcl/sample_consensus/sac_model_plane.h>
+#include <pcl/sample_consensus/sac_model_sphere.h>
+//#include <pcl/visualization/pcl_visualizer.h>
+#include <boost/thread/thread.hpp>
+
 
 ros::Publisher pub;
 ros::Publisher clusterPub;
@@ -32,12 +47,13 @@ cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
 	ROS_INFO("PCL Processing Started");
 	sensor_msgs::PointCloud2 output;
 	pcl_eod::Clusters cluster;
+	pcl::PointCloud<pcl::PointXYZ>::Ptr final (new pcl::PointCloud<pcl::PointXYZ>);
 	// Convert the sensor_msgs/PointCloud2 data to pcl/PointCloud
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloudPtr(new pcl::PointCloud<pcl::PointXYZ>), cloud_f (new pcl::PointCloud<pcl::PointXYZ>);
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_removed(new pcl::PointCloud<pcl::PointXYZ>);
 	pcl::fromROSMsg (*input, *cloudPtr);
 	//-----------------
-	for(unsigned int i = 0; i < cloudPtr->size(); i++)
+	for(unsigned int i = 0; i < cloudPtr->size(); i += 4)
 	{
 		if(isnan(cloudPtr->points[i].z) == false)
 		{
@@ -47,113 +63,30 @@ cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
 				cloudPtr->points[i].y = NAN;
 				cloudPtr->points[i].z = NAN;
 			}
+			else
+			{
+				cloud_removed->push_back(cloudPtr->points[i]);
+			}
 		}
 	}
+	  std::vector<int> inliers;
+	  // created RandomSampleConsensus object and compute the appropriated model
+	  pcl::SampleConsensusModelPlane<pcl::PointXYZ>::Ptr   model_p (new pcl::SampleConsensusModelPlane<pcl::PointXYZ> (cloud_removed));
 
-	  // Create the filtering object: downsample the dataset using a leaf size of 1cm
-	  pcl::VoxelGrid<pcl::PointXYZ> vg;
-	  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filtered (new pcl::PointCloud<pcl::PointXYZ>);
-	  vg.setInputCloud (cloudPtr);
-	  vg.setLeafSize (0.03f, 0.03f, 0.03f);
-	  vg.filter (*cloud_filtered);
-	  //cloud_filtered = cloudPtr;
-	 // std::cout << "PointCloud after filtering has: " << cloud_filtered->points.size ()  << " data points." << std::endl; //*
+	    pcl::RandomSampleConsensus<pcl::PointXYZ> ransac (model_p);
+	    ransac.setDistanceThreshold (.01);
+	    ransac.computeModel();
+	    ransac.getInliers(inliers);
 
+	    for( std::vector<int>::const_iterator i = inliers.begin(); i != inliers.end(); ++i)
+	        std::cout << *i << ' ';
 
-
-
-	  // Create the segmentation object for the planar model and set all the parameters
-	  pcl::SACSegmentation<pcl::PointXYZ> seg;
-	  pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
-	  pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
-	  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_plane (new pcl::PointCloud<pcl::PointXYZ> ());
-	  pcl::PCDWriter writer;
-	  seg.setOptimizeCoefficients (true);
-	  seg.setModelType (pcl::SACMODEL_PLANE);
-	  seg.setMethodType (pcl::SAC_RANSAC);
-	  seg.setMaxIterations (100);
-	  seg.setDistanceThreshold (0.10);
-
-	  int nr_points = (int) cloud_filtered->points.size ();
-	  while (cloud_filtered->points.size () > 0.3 * nr_points)
-	  {
-	    // Segment the largest planar component from the remaining cloud
-	    seg.setInputCloud (cloud_filtered);
-	    seg.segment (*inliers, *coefficients);
-	    if (inliers->indices.size () == 0)
-	    {
-	      std::cout << "Could not estimate a planar model for the given dataset." << std::endl;
-	      break;
-	    }
-
-	    // Extract the planar inliers from the input cloud
-	    pcl::ExtractIndices<pcl::PointXYZ> extract;
-	    extract.setInputCloud (cloud_filtered);
-	    extract.setIndices(inliers);
-	    extract.setNegative (false);
-
-	    // Write the planar inliers to disk
-	    extract.filter (*cloud_plane);
-	    //std::cout << "PointCloud representing the planar component: " << cloud_plane->points.size () << " data points." << std::endl;
-
-	    // Remove the planar inliers, extract the rest
-	    extract.setNegative (true);
-	    extract.filter (*cloud_f);
-	    *cloud_filtered = *cloud_f;
-	  }
-	  //ROS_INFO("%d %d %d", cloud_filtered->width, cloud_filtered->height, cloud_filtered->size());
-	  if(cloud_filtered->size() <= 0)
-	  {
-		  ROS_ERROR("Size 0 point cloud received");
-		  return ;
-	  }
-	  // Creating the KdTree object for the search method of the extraction
-	  pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);
-	  tree->setInputCloud(cloud_filtered);
-
-	  std::vector<pcl::PointIndices> cluster_indices;
-	  pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
-	  ec.setClusterTolerance (0.1); // 10cm
-	  ec.setMinClusterSize (10);
-	  ec.setMaxClusterSize (25000);
-	  ec.setSearchMethod (tree);
-	  ec.setInputCloud (cloud_filtered);
-	  ec.extract (cluster_indices);
-
-	  int j = 0;
-      pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_cluster (new pcl::PointCloud<pcl::PointXYZ>);
-      pcl::PointIndices clusterIdx;
-
-	  for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin (); it != cluster_indices.end (); ++it)
-	  {
-		geometry_msgs::Point p;
-		p.z = 1000;
-	    for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); pit++)
-	    {
-	      cloud_cluster->points.push_back (cloud_filtered->points[*pit]); //*
-	      if(cloud_filtered->points[*pit].z < p.z)
-	      {
-	    	  p.x = cloud_filtered->points[*pit].x;
-	    	  p.y = cloud_filtered->points[*pit].y;
-	    	  p.z = cloud_filtered->points[*pit].z;
-	    	  clusterIdx = *it;
-	      }
-	    }
-       cluster.point.push_back(p);
-
-	    //std::cout << "Minimum dist point is for this cluster is at " << minDistPt[0] << ", " << minDistPt[1] << ", " << minDistPt[2] << std::endl;
-	    ROS_INFO("Minimum dist point is for this cluster is at %f, %f, %f", p.x, p.y, p.z);
-	    cloud_cluster->width = cloud_cluster->points.size ();
-	    cloud_cluster->height = 1;
-	    cloud_cluster->is_dense = true;
-	    j++;
-	  }
-	cluster.header.frame_id = "/camera";
-	cluster.header.stamp = ros::Time::now();
+	  // copies all inliers of the model computed to another PointCloud
+	  pcl::copyPointCloud<pcl::PointXYZ>(*cloud_removed, inliers, *final);
 
 
 	//pcl::toROSMsg(*cloud_cluster, output);
-	pcl::toROSMsg(*cloudPtr, output);
+	pcl::toROSMsg(*final, output);
 	output.header.frame_id = "camera";
 	pub.publish(output);
 	clusterPub.publish(cluster);
