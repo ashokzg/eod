@@ -26,11 +26,10 @@ class ClusterSub(Exception):
     pass
         
   def ClustersCb(self, data):
-    print data
-    for i in range(len(data.minpoint)):
-      mp = data.minpoint[i]
-      xp = data.maxpoint[i]
-      self.br.sendTransform([mp.x, mp.y, mp.z], [0,0,0,1], rospy.Time.now(), "obs"+str(i)+str(j), "/camera")
+    mp = data.minpoint
+    xp = data.maxpoint
+    for i in range(len(mp)):
+      self.br.sendTransform([mp.x, mp.y, mp.z], [0,0,0,1], rospy.Time.now(), "obs"+str(i), "/camera")
       j = 0
       for p in numpy.linspace(data.minpoint[i].x, data.maxpoint[i].x, 10):
         self.br.sendTransform([p, mp.y, mp.z], [0,0,0,1], rospy.Time.now(), "obs"+str(i)+str(j), "/camera")

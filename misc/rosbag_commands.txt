@@ -1,3 +1,3 @@
 run eod_nav primStereo.launch
 run stereo improc launch file
-rosbag record -e "/eodCam/(left|right)/camera_info" "/eodCam/(left|right)/image_raw" tf -O try5.bag
+rosbag record -e "/eodCam/(left|right)/camera_info" "/eodCam/(left|right)/image_raw" "/eodCam/points2" "eodCam/disparity" -O try3.bag
