@@ -36,6 +36,7 @@
 
 
 ros::Publisher pub;
+ros::Publisher pub1;
 ros::Publisher clusterPub;
 //pcl16::PointCloud<pcl16::PointXYZ>::Ptr cloud_removed16(new pcl16::PointCloud<pcl16::PointXYZ>);
 
@@ -45,13 +46,16 @@ cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
 
 	ROS_INFO("PCL Started");
 	ROS_INFO("PCL Processing Started");
-	sensor_msgs::PointCloud2 output;
+	sensor_msgs::PointCloud2 output, output1;
 	pcl_eod::Clusters cluster;
 	pcl::PointCloud<pcl::PointXYZ>::Ptr final (new pcl::PointCloud<pcl::PointXYZ>);
+	pcl::PointCloud<pcl::PointXYZ>::Ptr final1 (new pcl::PointCloud<pcl::PointXYZ>);
 	// Convert the sensor_msgs/PointCloud2 data to pcl/PointCloud
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloudPtr(new pcl::PointCloud<pcl::PointXYZ>), cloud_f (new pcl::PointCloud<pcl::PointXYZ>);
-	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_removed(new pcl::PointCloud<pcl::PointXYZ>);
+
+	pcl::PointCloud<pcl::PointXYZ>::Ptr  cloud_removed(new pcl::PointCloud<pcl::PointXYZ>);
 	pcl::fromROSMsg (*input, *cloudPtr);
+	//cloud_removed.resize(5);
 	//-----------------
 	for(unsigned int i = 0; i < cloudPtr->size(); i += 4)
 	{
@@ -69,27 +73,49 @@ cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
 			}
 		}
 	}
-	  std::vector<int> inliers;
-	  // created RandomSampleConsensus object and compute the appropriated model
-	  pcl::SampleConsensusModelPlane<pcl::PointXYZ>::Ptr   model_p (new pcl::SampleConsensusModelPlane<pcl::PointXYZ> (cloud_removed));
+	for(int i = 0; i < 2; i++)
+	{
 
-	    pcl::RandomSampleConsensus<pcl::PointXYZ> ransac (model_p);
-	    ransac.setDistanceThreshold (.01);
-	    ransac.computeModel();
-	    ransac.getInliers(inliers);
+	  if(cloud_removed->size() > 0)
+	  {
 
-	    for( std::vector<int>::const_iterator i = inliers.begin(); i != inliers.end(); ++i)
-	        std::cout << *i << ' ';
+		  std::vector<int> inliers;
+		  // created RandomSampleConsensus object and compute the appropriated model
+		  pcl::SampleConsensusModelPlane<pcl::PointXYZ>::Ptr   model_p (new pcl::SampleConsensusModelPlane<pcl::PointXYZ> (cloud_removed));
 
-	  // copies all inliers of the model computed to another PointCloud
-	  pcl::copyPointCloud<pcl::PointXYZ>(*cloud_removed, inliers, *final);
+			pcl::RandomSampleConsensus<pcl::PointXYZ> ransac (model_p);
+			ransac.setDistanceThreshold (0.05);
+			ransac.computeModel();
+			ransac.getInliers(inliers);
 
+	//	    for( std::vector<int>::const_iterator i = inliers.begin(); i != inliers.end(); ++i)
+	//	        std::cout << *i << ' ';
 
+		  // copies all inliers of the model computed to another PointCloud
+			if(i == 0)
+				pcl::copyPointCloud<pcl::PointXYZ>(*cloud_removed, inliers, *final);
+			else
+				pcl::copyPointCloud<pcl::PointXYZ>(*cloud_removed, inliers, *final1);
+		  std::cout<<cloud_removed->size()<<" ";
+		  for( std::vector<int>::const_iterator k = inliers.begin(); k != inliers.end(); k++)
+		  {
+			  cloud_removed->erase(cloud_removed->begin()+(*k));
+		  }
+		  std::cout<<cloud_removed->size()<<" ";
+
+	  }
+	  else
+		  break;
+	}
 	//pcl::toROSMsg(*cloud_cluster, output);
 	pcl::toROSMsg(*final, output);
+	pcl::toROSMsg(*final1, output1);
 	output.header.frame_id = "camera";
+	output1.header.frame_id = "camera";
 	pub.publish(output);
+	pub1.publish(output1);
 	clusterPub.publish(cluster);
+
 	ROS_INFO("PCL Ended");
 	ROS_INFO("PCL Processing Ended");
 }
@@ -105,6 +131,7 @@ int main (int argc, char** argv)
 
   // Create a ROS publisher for the output model coefficients
   pub = nh.advertise<sensor_msgs::PointCloud2> ("output", 1);
+  pub1 = nh.advertise<sensor_msgs::PointCloud2> ("output1", 1);
   clusterPub = nh.advertise<pcl_eod::Clusters>("clusters", 5);
   // Spin
   ros::spin ();
