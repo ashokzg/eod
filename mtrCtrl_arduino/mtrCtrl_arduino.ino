@@ -17,7 +17,7 @@
 #include <ros/time.h>
 #include <vel_msgs/Velocity.h>
 #include <ultrasonic/Ultrasonic.h>
-#include <std_msgs/Int32.h>
+#include <geometry_msgs/Vector3.h>
 #include "DualVNH5019MotorShield.h"
 //Full Speed = 400 : 0-255 for Analog Write mapped to 400
 
@@ -47,13 +47,12 @@ DualVNH5019MotorShield md;
 ros::NodeHandle  nh;
 
 ultrasonic::Ultrasonic us_msg;
-std_msgs::Int32 encLCount;
+
+geometry_msgs::Vector3 encoder_info;
 
 ros::Publisher pub_range( "/ultrasound", &us_msg);
-ros::Publisher pub_enc( "/encleft", &encLCount);
+ros::Publisher pub_enc( "/encTicks", &encoder_info);
 const int adc_pin = 0;
-
-char frameid[] = "/ultrasound";
 
 float linp;
 float angp;
@@ -108,7 +107,7 @@ void messageCb( const vel_msgs::Velocity& vel){
   md.setM2Speed(leftVel);
 }
 
-ros::Subscriber<vel_msgs::Velocity> sub("cmd_vel", &messageCb );  
+ros::Subscriber<vel_msgs::Velocity> sub("/cmd_vel", &messageCb );  
 
 void setup()
 { 
@@ -117,14 +116,15 @@ void setup()
   nh.initNode();
   nh.subscribe(sub);
   nh.advertise(pub_range);
+  nh.advertise(pub_enc);
 
   pinMode(ENC_RIGHT, INPUT);
   digitalWrite(ENC_RIGHT, HIGH);
   pinMode(ENC_LEFT, INPUT);
   digitalWrite(ENC_LEFT, HIGH);
   
-  //attachInterrupt(0, updateRightEncoder, RISING); 
-  //attachInterrupt(1, updateLeftEncoder, RISING);
+  attachInterrupt(0, updateRightEncoder, RISING); 
+  attachInterrupt(1, updateLeftEncoder, RISING);
 
 }
 
@@ -132,7 +132,6 @@ long range_time, probe_time, enc_time;
 
 void loop()
 {  
-
 
   if(readOrProbe == UPROBE_START)
   {
@@ -167,14 +166,14 @@ void loop()
   }
 
 
-  //if(PINA)
-  //updateRightEncoder();
   //publish the value every 25 milliseconds
-//  if(millis()>= enc_time)
-//  {
-//     encLCount.data = LdVal;
-//     pub_enc.publish(&encLCount); 
-//     enc_time = millis() + 50;
-//  }
+  if(millis() >= enc_time)
+  {
+     encoder_info.x = LdVal;
+     encoder_info.y = RdVal;
+     pub_enc.publish(&encoder_info); 
+     enc_time = millis() + 25;
+  }
+  
   nh.spinOnce();
 }
