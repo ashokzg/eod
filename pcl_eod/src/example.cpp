@@ -31,6 +31,7 @@
 #include <pcl/sample_consensus/ransac.h>
 #include <pcl/sample_consensus/sac_model_plane.h>
 #include <pcl/sample_consensus/sac_model_sphere.h>
+#include <pcl/sample_consensus/sac_model_normal_parallel_plane.h>
 //#include <pcl/visualization/pcl_visualizer.h>
 #include <boost/thread/thread.hpp>
 
@@ -79,29 +80,36 @@ cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
 	  if(cloud_removed->size() > 0)
 	  {
 
-		  std::vector<int> inliers;
-		  // created RandomSampleConsensus object and compute the appropriated model
-		  pcl::SampleConsensusModelPlane<pcl::PointXYZ>::Ptr   model_p (new pcl::SampleConsensusModelPlane<pcl::PointXYZ> (cloud_removed));
+		std::vector<int> inliers;
+		// created RandomSampleConsensus object and compute the appropriated model
+		pcl::SampleConsensusModelPlane<pcl::PointXYZ>::Ptr   model_p (new pcl::SampleConsensusModelPlane<pcl::PointXYZ> (cloud_removed));
 
-			pcl::RandomSampleConsensus<pcl::PointXYZ> ransac (model_p);
-			ransac.setDistanceThreshold (0.05);
-			ransac.computeModel();
-			ransac.getInliers(inliers);
+		pcl::SampleConsensusModelNormalParallelPlane<pcl::PointXYZ , pcl::Normal>::Ptr model_pn (new pcl::SampleConsensusModelNormalParallelPlane<pcl::PointXYZ, pcl::Normal> (cloud_removed));
+		Eigen::Vector3f n(1,0,0);
+		model_pn->setAxis(n);
+		model_pn->setEpsAngle(3.14);
 
-	//	    for( std::vector<int>::const_iterator i = inliers.begin(); i != inliers.end(); ++i)
-	//	        std::cout << *i << ' ';
+		pcl::RandomSampleConsensus<pcl::PointXYZ> ransac (model_p);
 
-		  // copies all inliers of the model computed to another PointCloud
-			if(i == 0)
-				pcl::copyPointCloud<pcl::PointXYZ>(*cloud_removed, inliers, *final);
-			else
-				pcl::copyPointCloud<pcl::PointXYZ>(*cloud_removed, inliers, *final1);
-		  std::cout<<cloud_removed->size()<<" ";
-		  for( std::vector<int>::const_iterator k = inliers.begin(); k != inliers.end(); k++)
-		  {
-			  cloud_removed->erase(cloud_removed->begin()+(*k));
-		  }
-		  std::cout<<cloud_removed->size()<<" ";
+
+		ransac.setDistanceThreshold (0.05);
+		ransac.computeModel();
+		ransac.getInliers(inliers);
+
+		//	    for( std::vector<int>::const_iterator i = inliers.begin(); i != inliers.end(); ++i)
+		//	        std::cout << *i << ' ';
+
+		// copies all inliers of the model computed to another PointCloud
+		if(i == 0)
+			pcl::copyPointCloud<pcl::PointXYZ>(*cloud_removed, inliers, *final);
+		else
+			pcl::copyPointCloud<pcl::PointXYZ>(*cloud_removed, inliers, *final1);
+		std::cout<<cloud_removed->size()<<" ";
+		for( std::vector<int>::const_iterator k = inliers.begin(); k != inliers.end(); k++)
+		{
+		  cloud_removed->erase(cloud_removed->begin()+(*k));
+		}
+		std::cout<<cloud_removed->size()<<" ";
 
 	  }
 	  else
