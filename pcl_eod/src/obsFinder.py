@@ -5,8 +5,10 @@ import roslib; roslib.load_manifest('pcl_eod')
 from pcl_eod.msg import Clusters
 
 import numpy
+import tf
 
 class ClusterSub(Exception):
+  br = tf.TransformBroadcaster()
   def __init__(self):
     rospy.init_node("cluster")
     rospy.logwarn("EOD Cluster Organizing")
@@ -24,14 +26,15 @@ class ClusterSub(Exception):
     pass
         
   def ClustersCb(self, data):
-    min = 100
-    for p in data.point:
-      if min > p.z:
-        min = p.z
-        minP = p
-    print min
-    print minP
-    print "\n"
+    print data
+    for i in range(len(data.minpoint)):
+      mp = data.minpoint[i]
+      xp = data.maxpoint[i]
+      self.br.sendTransform([mp.x, mp.y, mp.z], [0,0,0,1], rospy.Time.now(), "obs"+str(i)+str(j), "/camera")
+      j = 0
+      for p in numpy.linspace(data.minpoint[i].x, data.maxpoint[i].x, 10):
+        self.br.sendTransform([p, mp.y, mp.z], [0,0,0,1], rospy.Time.now(), "obs"+str(i)+str(j), "/camera")
+        j += 1
 
 if __name__ == "__main__":  
   cls = ClusterSub()

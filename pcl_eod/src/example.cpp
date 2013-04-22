@@ -34,6 +34,7 @@
 #include <pcl16/sample_consensus/sac_model_normal_parallel_plane.h>
 //#include <pcl16/visualization/pcl_visualizer.h>
 #include <boost/thread/thread.hpp>
+#include <pcl16/segmentation/region_3d.h>
 
 
 ros::Publisher pub;
@@ -206,60 +207,100 @@ void cb(const sensor_msgs::PointCloud2ConstPtr& input)
 
 	  std::vector<pcl16::PointIndices> cluster_indices;
 	  pcl16::EuclideanClusterExtraction<pcl16::PointXYZ> ec;
-	  ec.setClusterTolerance (0.5); // 10cm
-	  ec.setMinClusterSize (200);
-	  ec.setMaxClusterSize (25000);
+
+	  ec.setClusterTolerance (0.1); // 10cm
+	  ec.setMinClusterSize (50);
+	  ec.setMaxClusterSize (2500);
 	  ec.setSearchMethod (tree);
 	  ec.setInputCloud (cloud_removed);
 	  ec.extract (cluster_indices);
 
 	  int j = 0;
+	  float minDist = 1000, maxDist = 0, t;
       pcl16::PointCloud<pcl16::PointXYZ>::Ptr cloud_cluster (new pcl16::PointCloud<pcl16::PointXYZ>);
       pcl16::PointIndices clusterIdx;
 
 	  for (std::vector<pcl16::PointIndices>::const_iterator it = cluster_indices.begin (); it != cluster_indices.end (); ++it)
 	  {
-		geometry_msgs::Point p;
-		p.z = 1000;
+		geometry_msgs::Point p, minP, maxP;
+		p.x = 0;
+		p.y = 0;
+		p.z = 0;
+		int count = 0;
+		minDist = 1000;
+		maxDist = 0;
 	    for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); pit++)
 	    {
-	      cloud_cluster->points.push_back (cloud_removed->points[*pit]); //*
-	      if(cloud_removed->points[*pit].z < p.z)
-	      {
-	    	  p.x = cloud_removed->points[*pit].x;
-	    	  p.y = cloud_removed->points[*pit].y;
-	    	  p.z = cloud_removed->points[*pit].z;
+	    	  p.x += cloud_removed->points[*pit].x;
+	    	  p.y += cloud_removed->points[*pit].y;
+	    	  p.z += cloud_removed->points[*pit].z;
 	    	  clusterIdx = *it;
-	      }
+	    	  count++;
 	    }
-       cluster.point.push_back(p);
-
+	    p.x /= count;
+	    p.y /= count;
+	    p.z /= count;
 	    //std::cout << "Minimum dist point is for this cluster is at " << minDistPt[0] << ", " << minDistPt[1] << ", " << minDistPt[2] << std::endl;
-	    ROS_INFO("Minimum dist point is for this cluster is at %f, %f, %f", p.x, p.y, p.z);
+	    ROS_INFO("Avg. dist for this cluster is at %f, %f, %f", p.x, p.y, p.z);
+	    if(p.z < 5 && p.y > -0.7 )//&& p.y < 0.15)
+	    {
+	    	for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); pit++)
+	    	{
+	    		cloud_removed->points[*pit].z = p.z;
+	    		cloud_removed->points[*pit].y = 0.2;
+		    	cloud_cluster->points.push_back (cloud_removed->points[*pit]); //*
+				t = sqrt(cloud_removed->points[*pit].x*cloud_removed->points[*pit].x
+					  + cloud_removed->points[*pit].y*cloud_removed->points[*pit].y
+					  + cloud_removed->points[*pit].z*cloud_removed->points[*pit].z);
+				if(minDist > t)
+				{
+				  minDist = t;
+				  minP.x = cloud_removed->points[*pit].x;
+				  minP.y = cloud_removed->points[*pit].y;
+				  minP.z = cloud_removed->points[*pit].z;
+				}
+				if(maxDist < t)
+				{
+					maxDist = t;
+					maxP.x = cloud_removed->points[*pit].x;
+					maxP.y = cloud_removed->points[*pit].y;
+					maxP.z = cloud_removed->points[*pit].z;
+				}
+	    	}
+		    ROS_INFO("Min dist for this cluster is at %f, %f, %f", minP.x, minP.y, minP.z);
+		    ROS_INFO("Max dist for this cluster is at %f, %f, %f", maxP.x, maxP.y, maxP.z);
+	    	cluster.minpoint.push_back(minP);
+	    	cluster.maxpoint.push_back(maxP);
+
+	    	ROS_INFO("Cluster added");
+	    }
+	    else
+	    	ROS_INFO("REJECTED");
+
 	    cloud_cluster->width = cloud_cluster->points.size ();
 	    cloud_cluster->height = 1;
 	    cloud_cluster->is_dense = true;
 	    j++;
-	  }
+	}
 	cluster.header.frame_id = "/camera";
 	cluster.header.stamp = ros::Time::now();
 
-	for(unsigned int i = 0; i < cloud_cluster->size(); i += 1)
-	{
-		if(isnan(cloud_cluster->points[i].z) == false)
-		{
-			if(cloud_cluster->points[i].z < 5.5)
-			{
-				if(cloud_cluster->points[i].y < 0.25 && cloud_cluster->points[i].y > -0.7)
-				{
-					cloud_final->push_back(cloud_cluster->points[i]);
-				}
-			}
-		}
-	}
+//	for(unsigned int i = 0; i < cloud_cluster->size(); i += 1)
+//	{
+//		if(isnan(cloud_cluster->points[i].z) == false)
+//		{
+//			if(cloud_cluster->points[i].z < 5.5)
+//			{
+//				if(cloud_cluster->points[i].y < 0.25 && cloud_cluster->points[i].y > -0.7)
+//				{
+//					cloud_final->push_back(cloud_cluster->points[i]);
+//				}
+//			}
+//		}
+//	}
 	std::cout<<std::endl;
-	//pcl16::toROSMsg(*cloud_cluster, output);
-	pcl16::toROSMsg(*cloud_final, output);
+	pcl16::toROSMsg(*cloud_cluster, output);
+	//pcl16::toROSMsg(*cloud_final, output);
 	output.header.frame_id = "camera";
 	pub.publish(output);
 	clusterPub.publish(cluster);
