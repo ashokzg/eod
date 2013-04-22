@@ -2,10 +2,11 @@
 #include <geometry_msgs/Vector3.h>
 #include <tf/transform_broadcaster.h>
 #include <nav_msgs/Odometry.h>
-#include <iostream.h>
+#include <iostream>
 
 #define LENGTH_PER_REV 35.0
 #define COUNTS_PER_REV 80.0
+#define WHEEL_TRACK
 long _PreviousLeftEncoderCounts = 0;
 long _PreviousRightEncoderCounts = 0;
 ros::Time current_time_encoder, last_time_encoder;
@@ -26,14 +27,24 @@ void WheelCallback(const geometry_msgs::Vector3::ConstPtr& ticks)
 
   current_time_encoder = ros::Time::now();
 
-  deltaLeft = ticks->x - _PreviousLeftEncoderCounts;
-  deltaRight = ticks->y - _PreviousRightEncoderCounts;
+  deltaLeft = (ticks->x - _PreviousLeftEncoderCounts)* DistancePerCount;
+  deltaRight = (ticks->y - _PreviousRightEncoderCounts)* DistancePerCount;
+  
+  ROS_INFO("EncTicks: %f, %f", ticks->x, ticks->y);
+ 
+  dt = (current_time_encoder - last_time_encoder).toSec();
 
-  vx = deltaLeft * DistancePerCount; // (current_time_encoder - last_time_encoder).toSec();
-  vy = deltaRight * DistancePerCount; // (current_time_encoder - last_time_encoder).toSec();
-
+  dxy_ave = ((deltaLeft + deltaRight)/ 2.0) 
+  //vy = deltaRight * DistancePerCount; // (current_time_encoder - last_time_encoder).toSec();
+  dth = (deltaRight - deltaLeft)/ WHEEL_TRACK;
+ 
+  vxy = dxy_ave / dt;
+  vth = dth /dt; 
+  ROS_INFO("dxy and dth: %f, %f", dxy_ave, dth);
+ 
   _PreviousLeftEncoderCounts = ticks->x;
   _PreviousRightEncoderCounts = ticks->y;
+ 
   last_time_encoder = current_time_encoder;
   
 }
@@ -47,7 +58,6 @@ int main(int argc, char **argv)
   tf::TransformBroadcaster odom_broadcaster;
 
   ROS_INFO("Here in Main");
-  ROS_INFO("Distance per rev: %f", DistancePerCount);
   ros::Time current_time, last_time;
   current_time = ros::Time::now();
   last_time = ros::Time::now();
@@ -56,16 +66,20 @@ int main(int argc, char **argv)
   while(n.ok()){
 
     current_time = ros::Time::now();
+    if(dxy_ave != 0){
+	    double dt = (current_time - last_time).toSec();
+	    double delta_x =  cos(dth)*dxy_ave;
+	    double delta_y =  -sin(dth)*dxy_ave;
+	    x = cos(th)*delta_x - sin(th)*delta_y;
+	    y = sin(th)*delta_x + cos(th)*delta_y; 
+    }
 
-    double dt = (current_time - last_time).toSec();
-    double delta_x = (vx * cos(th) - vy * sin(th)) * dt;
-    double delta_y = (vx * sin(th) + vy * cos(th)) * dt;
-    double delta_th = vth * dt;
+    if(dth!=0){
+	    th += dth;
+    }
 
-    x += delta_x;
-    y += delta_y;
-    th += delta_th;
-    std::cout<<"x: "<<x<<"y: "<<y<<"th :"<<th;
+    std::cout<<"x: "<<x<<" y: "<<y<<" th :"<<th<<std::endl;
+    //ROS_INFO("X: %f, Y: %f, TH: %f",x,y,th);
     //ROS_INFO("");
 
     geometry_msgs::Quaternion odom_quat = tf::createQuaternionMsgFromYaw(th);

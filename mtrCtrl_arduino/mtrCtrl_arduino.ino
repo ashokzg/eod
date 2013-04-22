@@ -107,7 +107,7 @@ void messageCb( const vel_msgs::Velocity& vel){
   md.setM2Speed(leftVel);
 }
 
-ros::Subscriber<vel_msgs::Velocity> sub("/cmd_vel", &messageCb );  
+ros::Subscriber<vel_msgs::Velocity> sub("cmd_vel", &messageCb );  
 
 void setup()
 { 
