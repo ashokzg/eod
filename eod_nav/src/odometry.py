@@ -65,7 +65,6 @@ class Odo:
 
 
   def poll(self, data):
-    print data
     now = rospy.Time.now()
     if now > self.t_next:
       # Read the encoders
