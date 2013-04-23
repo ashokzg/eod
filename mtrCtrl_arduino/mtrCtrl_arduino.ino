@@ -22,12 +22,12 @@
 //Full Speed = 400 : 0-255 for Analog Write mapped to 400
 
 #define FS 400
-#define ULTRA_FRONT A1
-#define ULTRA_RIGHT A0
+#define ULTRA_FRONT A0
+#define ULTRA_RIGHT A1
 #define ULTRA_LEFT A2
 #define ENC_LEFT 3
 #define ENC_RIGHT 2
-#define PROBE_PIN 8
+//#define PROBE_PIN 8
 
 #define UREAD 0
 #define UPROBE_START 1
@@ -60,6 +60,8 @@ int linvel;
 int angvel;
 int rightVel;
 int leftVel;
+int rightDir = 0;
+int leftDir = 0;
 
 float getRange_Ultrasound(int pin_num){
   int val = 0;
@@ -74,7 +76,10 @@ void updateRightEncoder(){
  if(Rcount%11==0)
     {   
 		RightEncoderPos++;Rcount=0;
-		RdVal= RdVal+RightEncoderPos; 
+                if(rightDir == 0)
+        	    RdVal= RdVal + RightEncoderPos; 
+                else
+        	    RdVal= RdVal - RightEncoderPos;   
 		RightEncoderPos=0;
 	}
   }
@@ -85,7 +90,10 @@ if(Lcount%11==0)
     {   
       LeftEncoderPos++;
       Lcount=0;
-      LdVal= LdVal+LeftEncoderPos;  
+      if(leftDir == 0)      
+        LdVal= LdVal + LeftEncoderPos;  
+      else
+        LdVal= LdVal - LeftEncoderPos;              
       LeftEncoderPos=0;
     }
 
@@ -104,14 +112,30 @@ void messageCb( const vel_msgs::Velocity& vel){
   leftVel = linvel-angvel;
   
   md.setM1Speed(rightVel);
-  md.setM2Speed(leftVel);
+  md.setM2Speed(-leftVel);
+  if(rightVel < 0)
+  {
+    rightDir = 1;
+  }
+  else
+  {
+    rightDir = 0;
+  }
+  if(leftVel < 0)
+  {
+    leftDir = 1; 
+  }
+  else
+  {
+    leftDir = 0;
+  }  
 }
 
 ros::Subscriber<vel_msgs::Velocity> sub("cmd_vel", &messageCb );  
 
 void setup()
 { 
-  pinMode(PROBE_PIN, OUTPUT);
+  //pinMode(PROBE_PIN, OUTPUT);
   md.init();
   nh.initNode();
   nh.subscribe(sub);
@@ -135,7 +159,7 @@ void loop()
 
   if(readOrProbe == UPROBE_START)
   {
-     digitalWrite(PROBE_PIN, HIGH);   // sets the trigger to HIGH
+     //digitalWrite(PROBE_PIN, HIGH);   // sets the trigger to HIGH
      readOrProbe = UPROBE_END;
      probe_time = millis() + 5;
   }
@@ -143,7 +167,7 @@ void loop()
   {
     if(millis() > probe_time)
     {
-      digitalWrite(PROBE_PIN, LOW);   // sets the trigger to LOW
+      //digitalWrite(PROBE_PIN, LOW);   // sets the trigger to LOW
       readOrProbe = UWAIT;
       range_time = millis() + 150; 
     }    
@@ -158,8 +182,8 @@ void loop()
   else if(readOrProbe == UREAD)
   {    
       us_msg.ultra_centre = getRange_Ultrasound(ULTRA_FRONT)*1.27;
-      us_msg.ultra_right = getRange_Ultrasound(ULTRA_RIGHT)*1.27;
-      us_msg.ultra_left = getRange_Ultrasound(ULTRA_LEFT)*1.27;    
+      us_msg.ultra_right = 600;// getRange_Ultrasound(ULTRA_RIGHT)*1.27;
+      us_msg.ultra_left = 600; //getRange_Ultrasound(ULTRA_LEFT)*1.27;    
       us_msg.header.stamp = nh.now();
       pub_range.publish(&us_msg);
       readOrProbe = UPROBE_START;    

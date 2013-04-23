@@ -233,7 +233,7 @@ class eodNav:
           #self.OBS_AVOID |= self.OBS_IDX[i]
         if self.dist[i] < self.OBS_STOP_DIST:
           pass
-          #self.OBS_STOP |= self.OBS_IDX[i]
+          self.OBS_STOP |= self.OBS_IDX[i]
     self.ultraCount += 1
 
 
@@ -440,7 +440,7 @@ class eodNav:
     #Stop trying after 25 s
     if self.backTrackCount*self.TIME_STEP >= 25000:
       raise AutoNavError(ERR.ERR_TIMEOUT, "Backtracking timeout")
-    self.vel.linVelPcent = -self.obsStLinVel
+    self.vel.linVelPcent = 0.0 #-self.obsStLinVel TODO Changed temp for stopping
     self.vel.angVelPcent = 0.0
     self.backTrackCount += 1 #Time increment every TIME_STEP    
     self.robotCmdPub.publish(self.vel) 

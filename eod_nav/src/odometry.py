@@ -54,7 +54,7 @@ class Odo:
     self.timeout = rospy.get_param('~base_controller_timeout', 1.0)
     #Reset the parameters so that it would be easily visible to debug
     self.wheel_diameter = rospy.get_param("~wheel_diameter", 10)
-    self.wheel_track = rospy.get_param("~wheel_track", 26)
+    self.wheel_track = rospy.get_param("~wheel_track", 0.26)
     self.encoder_resolution = rospy.get_param("~encoder_resolution", 48)
     self.gear_reduction = rospy.get_param("~gear_reduction", 1.0)
     self.accel_limit = rospy.get_param('~accel_limit', 0.1)
@@ -111,12 +111,13 @@ class Odo:
         (quaternion.x, quaternion.y, quaternion.z, quaternion.w),
         rospy.Time.now(),
         "base_link",
-        "odom"
+        "world"        
         )
+      self.odomBroadcaster.sendTransform((0,0,0.23), (-0.500, 0.485, -0.500, 0.515), rospy.Time.now(), "camera", "base_link")
   
       odom = Odometry()
-      odom.header.frame_id = "odom"
-      odom.child_frame_id = "base_link"
+      odom.header.frame_id = "base_link"
+      odom.child_frame_id = "world"
       odom.header.stamp = now
       odom.pose.pose.position.x = self.x
       odom.pose.pose.position.y = self.y

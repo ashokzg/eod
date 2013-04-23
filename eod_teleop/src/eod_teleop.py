@@ -23,8 +23,8 @@ def joy_callback(data):
     #Only if dead man's button is pressed take any action
     if data.buttons[4] == 1:
         print data.buttons[5] + 1, data.axes[4]
-        cmd_vel.linVelPcent = -(data.buttons[5] + 1)*data.axes[4]/2
-        cmd_vel.angVelPcent = -(data.buttons[5] + 1)*data.axes[3]/2
+        cmd_vel.linVelPcent = (data.buttons[5] + 1)*data.axes[4]/2
+        cmd_vel.angVelPcent = (data.buttons[5] + 1)*data.axes[3]/2
     robotCmdPub.publish(cmd_vel)
 
 def uiState(data):

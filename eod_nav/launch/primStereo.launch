@@ -9,4 +9,5 @@
     <node pkg="eod_nav" type="eod_nav.py" name="nav" output="screen"/>
     <node pkg="eod_nav" type="odometry.py" name="odom" output="screen"/>
     <node pkg="rosserial_python" type="serial_node.py" name="Motor_Ctrl" args="/dev/ttyACM0" />
+    <include file="$(find pcl_eod)/launch/pcl_eod.launch" />
 </launch>
