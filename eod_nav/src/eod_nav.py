@@ -9,9 +9,11 @@ from eod_nav.msg import NavDebug
 from ultrasonic.msg import Ultrasonic
 from vel_msgs.msg import Velocity
 from pcl_eod.msg import Clusters
+from geometry_msgs.msg import Point
 
 import numpy
 import copy
+import math
 
 DEBUG = True
 
@@ -134,6 +136,8 @@ class eodNav:
     self.vel.angVelPcent = 0.0
     self.manCmdVel.linVelPcent = 0.0
     self.manCmdVel.angVelPcent = 0.0
+    self.pclObsCountLeft = 0 
+    self.pclObsCountRight = 0
     self.dest = Dest()
     self.clusters = Clusters()
     self.dest.destPresent = False     
@@ -225,9 +229,11 @@ class eodNav:
     if self.ultraCount > 4:
       for i in range(3):
         if self.dist[i] < self.OBS_AVOID_DIST:
-          self.OBS_AVOID |= self.OBS_IDX[i]
+          pass
+          #self.OBS_AVOID |= self.OBS_IDX[i]
         if self.dist[i] < self.OBS_STOP_DIST:
-          self.OBS_STOP |= self.OBS_IDX[i]
+          pass
+          #self.OBS_STOP |= self.OBS_IDX[i]
     self.ultraCount += 1
 
 
@@ -235,10 +241,29 @@ class eodNav:
     self.dest = copy.deepcopy(data)    
 
   def clusterHdl(self, data):
+    print "Coming to cluster"
     self.clusters = copy.deepcopy(data)
+    self.pclObs = []
+    origin = Point(0,0,0)
     for i in range(len(data.minpoint)):
       mp = data.minpoint[i]
       xp = data.maxpoint[i]
+      x = (mp.x + xp.x)/2
+      #If overall distance is less than 4 m
+      if self.eucdist(mp, origin) < 4.0:
+        #if midpoint of the object is located at less than 1.5 m from our straight line path
+        if abs(x) < 1.5:
+          self.pclObs.append(mp)
+          self.prevOBS_AVOID = self.OBS_AVOID
+          if mp.x > 0:
+            self.OBS_AVOID |= self.OBS_L
+            self.pclObsCountLeft = 0
+          else:
+            self.OBS_AVOID |= self.OBS_R
+            self.pclObsCountRight = 0
+      
+  def eucdist(self, p1, p2):    
+    return math.sqrt((p1.x - p2.x)**2 + (p1.y - p2.y)**2 + (p1.z - p2.z)**2)
       
   #===============================================================
   #
@@ -246,6 +271,7 @@ class eodNav:
   #
   #===============================================================
   def navHandler(self):    
+    self.assessPclData()
     self.navStateChange = self.navStateChanger()
     if self.navState == NAV.IDLE:
       self.idleStateHandler()
@@ -337,7 +363,8 @@ class eodNav:
     if self.autoCount*self.TIME_STEP > 5*60*1000:
       raise AutoNavError(ERR.ERR_TIMEOUT, "Automode exceeded 5 minutes")    
     self.autoCount += 1
-    self.autoStateChange = self.autoStateChanger()
+    self.assessPclData()
+    self.autoStateChange = self.autoStateChanger()    
     if self.autoState == AUTO.IDLE:
       #No possibility of coming here
       pass
@@ -500,6 +527,7 @@ class eodNav:
     self.robotResp = AUTO_OUTPUT.STILL_RUNNING
     self.errorCount = 0
     self.applyAutoState = None
+    self.prevOBS_AVOID = self.OBS_AVOID
     
     
   def autoCalcDestArea(self):
@@ -536,7 +564,17 @@ class eodNav:
     except KeyError:
       rospy.logfatal("Auto mode key error. Should not have happened")      
     return stateChange
-  
+
+  def assessPclData(self):
+    #Some obstacle has been detected for the first time
+    print self.pclObsCountLeft, self.pclObsCountRight
+    self.pclObsCountLeft += 1
+    self.pclObsCountRight += 1    
+    if self.pclObsCountLeft*self.TIME_STEP > 20000:          
+      self.OBS_AVOID = self.OBS_AVOID & (~self.OBS_L)
+    if self.pclObsCountRight*self.TIME_STEP > 20000:
+      self.OBS_AVOID = self.OBS_AVOID & (~self.OBS_R)
+      
   
   def search_destination(self):    
     print "Searching for Destination"
@@ -574,9 +612,10 @@ class eodNav:
       rightLimit = (self.imgWidth/2 + 50) + 250            
     #Weirdly right and left are blocked and there seems to be a way in the middle
     #Try to go through it      
+    #TODO Not sure if I changed this correctly. A distance based strategy might be better
     elif self.OBS_AVOID == (self.OBS_L | self.OBS_R):
-      leftLimit = (self.imgWidth/2 - 50)
-      rightLimit = (self.imgWidth/2 + 50)
+      leftLimit = (self.imgWidth/2 - 50) - 250
+      rightLimit = (self.imgWidth/2 + 50) - 250
     #Only left is blocked, try to keep destination slighly towards the left      
     elif self.OBS_AVOID == self.OBS_L:
       leftLimit = (self.imgWidth/2 - 50) - 250
