@@ -125,7 +125,7 @@ cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
 	output.header.frame_id = "camera";
 	output1.header.frame_id = "camera";
 	pub.publish(output);
-	pub1.publish(output1);
+	//pub1.publish(output1);
 	//clusterPub.publish(cluster);
 
 	ROS_INFO("PCL Ended");
@@ -319,7 +319,7 @@ int main (int argc, char** argv)
 
   // Create a ROS publisher for the output model coefficients
   pub = nh.advertise<sensor_msgs::PointCloud2> ("output", 1);
-  pub1 = nh.advertise<sensor_msgs::PointCloud2> ("output1", 1);
+  //pub1 = nh.advertise<sensor_msgs::PointCloud2> ("output1", 1);
   clusterPub = nh.advertise<pcl_eod::Clusters>("clusters", 5);
   // Spin
   ros::spin ();
