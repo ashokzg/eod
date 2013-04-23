@@ -8,6 +8,7 @@ from sensor_msgs.msg import CameraInfo, Range
 from eod_nav.msg import NavDebug
 from ultrasonic.msg import Ultrasonic
 from vel_msgs.msg import Velocity
+from pcl_eod.msg import Clusters
 
 import numpy
 import copy
@@ -134,6 +135,7 @@ class eodNav:
     self.manCmdVel.linVelPcent = 0.0
     self.manCmdVel.angVelPcent = 0.0
     self.dest = Dest()
+    self.clusters = Clusters()
     self.dest.destPresent = False     
     self.Stopped = False
     self.robotResp = AUTO_OUTPUT.REACHED_DESTINATION #TODO Automode return status
@@ -168,6 +170,7 @@ class eodNav:
     #    Tracker
     rospy.Subscriber("destination", Dest, self.trackedDest)
     rospy.Subscriber("ultrasound", Ultrasonic, self.ultraSound)
+    rospy.Subscriber("clusters", Clusters, self.clusterHdl)
     #Init the publishers
     self.navStatePub = rospy.Publisher('Nav_State', std_msgs.msg.UInt32)
     self.robotCmdPub = rospy.Publisher('cmd_vel', Velocity)
@@ -231,6 +234,12 @@ class eodNav:
   def trackedDest(self, data):
     self.dest = copy.deepcopy(data)    
 
+  def clusterHdl(self, data):
+    self.clusters = copy.deepcopy(data)
+    for i in range(len(data.minpoint)):
+      mp = data.minpoint[i]
+      xp = data.maxpoint[i]
+      
   #===============================================================
   #
   #    MAIN NAVIGATION HANDLING
