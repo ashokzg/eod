@@ -9,6 +9,7 @@
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/eod_nav</url>
   <depend package="rospy"/>
+  <depend package="roscpp"/>
   <depend package="OpenTLD"/>
   <depend package="teamb_ui"/>
   <depend package="std_msgs"/>
