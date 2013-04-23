@@ -16,6 +16,7 @@
   <depend package="geometry_msgs"/>
   <depend package="ultrasonic"/>
   <depend package="vel_msgs"/>
+  <depend package="nav_msgs"/>
   <export>
     <cpp cflags=" -I${prefix}/srv_gen/cpp/include"/>
   </export>
