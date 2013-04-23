@@ -6,21 +6,18 @@
 
 #define LENGTH_PER_REV 35.0
 #define COUNTS_PER_REV 80.0
-#define WHEEL_TRACK
+#define WHEEL_TRACK 26.0//To be filled
 long _PreviousLeftEncoderCounts = 0;
 long _PreviousRightEncoderCounts = 0;
 ros::Time current_time_encoder, last_time_encoder;
 double DistancePerCount = LENGTH_PER_REV/COUNTS_PER_REV;
 
-double x;
-double y;
-double th;
-
-double vx;
-double vy;
-double vth;
-double deltaLeft;
-double deltaRight;
+double x,y,th;
+double vxy, vth;
+double dxy_ave,dth;
+double deltaLeft, deltaRight;
+double dt;
+double delta_x, delta_y;
 
 void WheelCallback(const geometry_msgs::Vector3::ConstPtr& ticks)
 {
@@ -34,7 +31,7 @@ void WheelCallback(const geometry_msgs::Vector3::ConstPtr& ticks)
  
   dt = (current_time_encoder - last_time_encoder).toSec();
 
-  dxy_ave = ((deltaLeft + deltaRight)/ 2.0) 
+  dxy_ave = (deltaLeft + deltaRight)/ 2.0; 
   //vy = deltaRight * DistancePerCount; // (current_time_encoder - last_time_encoder).toSec();
   dth = (deltaRight - deltaLeft)/ WHEEL_TRACK;
  
@@ -67,9 +64,9 @@ int main(int argc, char **argv)
 
     current_time = ros::Time::now();
     if(dxy_ave != 0){
-	    double dt = (current_time - last_time).toSec();
-	    double delta_x =  cos(dth)*dxy_ave;
-	    double delta_y =  -sin(dth)*dxy_ave;
+	    dt = (current_time - last_time).toSec();
+	    delta_x =  cos(dth)*dxy_ave;
+	    delta_y =  -sin(dth)*dxy_ave;
 	    x = cos(th)*delta_x - sin(th)*delta_y;
 	    y = sin(th)*delta_x + cos(th)*delta_y; 
     }
@@ -106,8 +103,7 @@ int main(int argc, char **argv)
     odom.pose.pose.orientation = odom_quat;
 
     odom.child_frame_id = "base_link";
-    odom.twist.twist.linear.x = vx;
-    odom.twist.twist.linear.y = vy;
+    odom.twist.twist.linear.x = vxy;
     odom.twist.twist.angular.z = vth;
 
     odom_pub.publish(odom);

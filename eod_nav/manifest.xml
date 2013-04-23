@@ -18,6 +18,7 @@
   <depend package="vel_msgs"/>
   <depend package="pcl_eod" />
   <depend package="tf" />
+  <depend package="nav_msgs"/>
   <export>
     <cpp cflags=" -I${prefix}/srv_gen/cpp/include"/>
   </export>
