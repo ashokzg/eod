@@ -150,7 +150,7 @@ class eodNav:
     self.OBS_STOP = 0
     self.OBS_AVOID = 0
     self.TIME_STEP = 50 #ms
-    self.AREA_THRESHOLD = 0.5 #If destination is greater than 50% of the image stop.
+    self.AREA_THRESHOLD = 0.20 #If destination is greater than 50% of the image stop.
     self.ultraCount = 0
     
     
@@ -221,9 +221,8 @@ class eodNav:
   def ultraSound(self, data):
     #Smoothes the ultrasonic data with a gaussian filter
     #Distance is a list of ultrasonic [left, center, right]
-    self.dist = self.processUltrasound(data)
-    self.navStatePub.publish(self.navState)    
-    self.OBS_AVOID = 0
+    self.dist = self.processUltrasound(data)    
+    #self.OBS_AVOID = 0
     self.OBS_STOP = 0
     #Time required to stablize
     if self.ultraCount > 4:
@@ -245,22 +244,27 @@ class eodNav:
     self.clusters = copy.deepcopy(data)
     self.pclObs = []
     origin = Point(0,0,0)
+    try:
+      area = self.destArea
+    except:
+      area = 0.0
     for i in range(len(data.minpoint)):
       mp = data.minpoint[i]
       xp = data.maxpoint[i]
       x = (mp.x + xp.x)/2
       #If overall distance is less than 4 m
-      if self.eucdist(mp, origin) < 4.0:
-        #if midpoint of the object is located at less than 1.5 m from our straight line path
-        if abs(x) < 1.5:
-          self.pclObs.append(mp)
-          self.prevOBS_AVOID = self.OBS_AVOID
-          if mp.x > 0:
-            self.OBS_AVOID |= self.OBS_L
-            self.pclObsCountLeft = 0
-          else:
-            self.OBS_AVOID |= self.OBS_R
-            self.pclObsCountRight = 0
+      if area < 0.1:
+        if self.eucdist(mp, origin) < 3.0:
+          #if midpoint of the object is located at less than 1.5 m from our straight line path
+          if abs(x) < 0.5:
+            self.pclObs.append(mp)
+            self.prevOBS_AVOID = self.OBS_AVOID
+            if mp.x > 0:
+              self.OBS_AVOID |= self.OBS_L
+              self.pclObsCountLeft = 0
+            else:
+              self.OBS_AVOID |= self.OBS_R
+              self.pclObsCountRight = 0
       
   def eucdist(self, p1, p2):    
     return math.sqrt((p1.x - p2.x)**2 + (p1.y - p2.y)**2 + (p1.z - p2.z)**2)
@@ -351,6 +355,14 @@ class eodNav:
   def manCmdVelHdl(self, data):
     self.manCmdVel = copy.deepcopy(data)
         
+  def setCmdVel(self):
+    if self.dist[1] > 0.2:
+      self.robotCmdPub.publish(self.vel)
+    else:
+      print "STOPPING"
+      self.vel.linVelPcent = 0.0
+      self.vel.angVelPcent = 0.0
+
   #===============================================================
   #
   #    AUTONOMOUS NAVIGATION HANDLING
@@ -411,7 +423,7 @@ class eodNav:
     else:
       self.vel.linVelPcent = self.stLinVel
       self.vel.angVelPcent = 0.0
-    self.robotCmdPub.publish(self.vel)
+    self.setCmdVel()
 
   
   def autoObsAvoidance(self):
@@ -431,19 +443,29 @@ class eodNav:
     else:
       self.vel.linVelPcent = self.obsStLinVel
       self.vel.angVelPcent = 0.0
-    self.robotCmdPub.publish(self.vel)      
+    self.setCmdVel()      
   
       
   def autoObsBacktrack(self):
+    print "Backtracking"
     if self.autoStateChange == True:
       self.backTrackCount = 0
     #Stop trying after 25 s
     if self.backTrackCount*self.TIME_STEP >= 25000:
       raise AutoNavError(ERR.ERR_TIMEOUT, "Backtracking timeout")
     self.vel.linVelPcent = 0.0 #-self.obsStLinVel TODO Changed temp for stopping
-    self.vel.angVelPcent = 0.0
+    if self.OBS_AVOID & self.OBS_R == self.OBS_R:
+      mult = -1
+    else:  
+      mult = 1
+    if self.backTrackCount % 120 < 40:
+      self.vel.angVelPcent = 0.35*mult
+    elif self.backTrackCount %120 < 80:
+      self.vel.angVelPcent = -0.35*mult
+    else:
+      self.vel.angVelPcent = 0.0
     self.backTrackCount += 1 #Time increment every TIME_STEP    
-    self.robotCmdPub.publish(self.vel) 
+    self.setCmdVel() 
   
   
   def autoObsReAvoidance(self):
@@ -469,12 +491,36 @@ class eodNav:
     else:
       self.vel.linVelPcent = self.obsStLinVel
       self.vel.angVelPcent = 0.0
-    self.robotCmdPub.publish(self.vel)
+    self.setCmdVel()
   
   
   def autoObsCuttingCorner(self):
-    rospy.logerr("Boss please implement cutting corner")
-    self.robotMove(self.STOP)
+    if self.autoStateChange == True:
+      self.cuttingCornerTime = 0
+    if self.cuttingCornerTime*self.TIME_STEP >= 20000:
+      raise AutoNavError(ERR.ERR_TIMEOUT, "Cutting corner timeout")
+    self.cuttingCornerTime += 1
+    if self.dist[1] > 0.2:
+      #calczone defines where we maintain our destination
+      leftLimit, rightLimit = self.calcZone()      
+      cx = self.dest.destX + self.dest.destWidth/2
+      cy = self.dest.destY + self.dest.destHeight/2
+      #If the destination is slipping towards the left, turn left
+      if cx < leftLimit:
+        self.vel.linVelPcent = self.obsRotLinVel
+        self.vel.angVelPcent = self.obsRotAngVel*1.5
+      #If the destination is slipping towards the right, turn right
+      elif cx > rightLimit:
+        self.vel.linVelPcent = self.obsRotLinVel
+        self.vel.angVelPcent = -self.obsRotAngVel*1.5
+      #We are good to zip towards the destination
+      else:
+        self.vel.linVelPcent = self.obsStLinVel
+        self.vel.angVelPcent = 0.0
+    else:
+      self.vel.linVelPcent = 0.0
+      self.vel.angVelPcent = 0.0
+    self.setCmdVel()      
     pass
   
   
@@ -500,7 +546,7 @@ class eodNav:
     elif self.autoDestSearchAction % 3 == 2:
       self.vel.linVelPcent = 0.0
       self.vel.angVelPcent = 0.0
-    self.robotCmdPub.publish(self.vel)      
+    self.setCmdVel()      
   
   
   def autoDestReached(self):
@@ -567,12 +613,12 @@ class eodNav:
 
   def assessPclData(self):
     #Some obstacle has been detected for the first time
-    print self.pclObsCountLeft, self.pclObsCountRight
+    #print self.pclObsCountLeft, self.pclObsCountRight
     self.pclObsCountLeft += 1
     self.pclObsCountRight += 1    
-    if self.pclObsCountLeft*self.TIME_STEP > 20000:          
+    if self.pclObsCountLeft*self.TIME_STEP > 5000:          
       self.OBS_AVOID = self.OBS_AVOID & (~self.OBS_L)
-    if self.pclObsCountRight*self.TIME_STEP > 20000:
+    if self.pclObsCountRight*self.TIME_STEP > 5000:
       self.OBS_AVOID = self.OBS_AVOID & (~self.OBS_R)
       
   
@@ -581,7 +627,7 @@ class eodNav:
     if self.dist[1] > 0.8:
       #Arbitrarily choose to go forward
       if self.frameCount <= 40:
-        self.vel.linVelPcent = 0.2
+        self.vel.linVelPcent = 0.0
         self.vel.angVelPcent = 0
       #after some time choose to turn LEFT
       elif self.frameCount <= 80:
@@ -592,7 +638,7 @@ class eodNav:
         self.vel.angVelPcent = 0.0
       else:
         self.frameCount = 0
-      self.robotCmdPub.publish(self.vel)      
+      self.setCmdVel()      
       self.frameCount += 1
                       
   
@@ -642,7 +688,7 @@ class eodNav:
       #for vel_steps in velRamp:
       self.vel.linVelPcent = self.stLinVel
       self.vel.angVelPcent = 0.0
-      #self.robotCmdPub.publish(self.vel)
+      #self.setCmdVel()
       rospy.logdebug("Straight")
     elif dir == self.LEFT:
       self.vel.linVelPcent = self.rotLinVel
@@ -656,7 +702,7 @@ class eodNav:
       self.vel.linVelPcent = 0.0
       self.vel.angVelPcent = 0.0
       rospy.logdebug("Stop")
-    self.robotCmdPub.publish(self.vel)
+    self.setCmdVel()
 
   #===============================================================
   #
@@ -676,6 +722,7 @@ class eodNav:
       s += "%0.2f " %self.dist[0]
       s += "%0.2f " %self.dist[1]
       s += "%0.2f " %self.dist[2]
+      s += str(self.vel.linVelPcent) + " " + str(self.vel.angVelPcent)
       #print s
       rospy.loginfo(s)
       self.navDebug.autoState = self.autoStatePrintNames[self.autoState]
@@ -768,9 +815,9 @@ class eodNav:
       (AUTO.OBS_AVOIDANCE,       1,1,0) : (AUTO.OBS_BACKTRACK       , ERR.NONE                ),
       (AUTO.OBS_AVOIDANCE,       1,1,1) : (AUTO.OBS_CUTTING_CORNER  , ERR.NONE                ),
       (AUTO.OBS_BACKTRACK,       0,0,0) : (AUTO.DEST_SEARCH         , ERR.NONE                ),
-      (AUTO.OBS_BACKTRACK,       0,0,1) : (AUTO.OBS_RE_AVOIDANCE    , ERR.NONE                ),
+      (AUTO.OBS_BACKTRACK,       0,0,1) : (AUTO.DEST_IN_SIGHT       , ERR.NONE                ),
       (AUTO.OBS_BACKTRACK,       0,1,0) : (AUTO.OBS_BACKTRACK       , ERR.NONE                ),
-      (AUTO.OBS_BACKTRACK,       0,1,1) : (AUTO.OBS_BACKTRACK       , ERR.NONE                ),
+      (AUTO.OBS_BACKTRACK,       0,1,1) : (AUTO.OBS_AVOIDANCE       , ERR.NONE                ),
       (AUTO.OBS_BACKTRACK,       1,0,0) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
       (AUTO.OBS_BACKTRACK,       1,0,1) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
       (AUTO.OBS_BACKTRACK,       1,1,0) : (AUTO.OBS_BACKTRACK       , ERR.NONE                ),

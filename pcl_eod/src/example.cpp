@@ -208,8 +208,8 @@ void cb(const sensor_msgs::PointCloud2ConstPtr& input)
 	  std::vector<pcl16::PointIndices> cluster_indices;
 	  pcl16::EuclideanClusterExtraction<pcl16::PointXYZ> ec;
 
-	  ec.setClusterTolerance (0.1); // 10cm
-	  ec.setMinClusterSize (50);
+	  ec.setClusterTolerance (0.30); // in m
+	  ec.setMinClusterSize (80);
 	  ec.setMaxClusterSize (2500);
 	  ec.setSearchMethod (tree);
 	  ec.setInputCloud (cloud_removed);
@@ -219,7 +219,7 @@ void cb(const sensor_msgs::PointCloud2ConstPtr& input)
 	  float minDist = 1000, maxDist = 0, t;
       pcl16::PointCloud<pcl16::PointXYZ>::Ptr cloud_cluster (new pcl16::PointCloud<pcl16::PointXYZ>);
       pcl16::PointIndices clusterIdx;
-
+    float temp;
 	  for (std::vector<pcl16::PointIndices>::const_iterator it = cluster_indices.begin (); it != cluster_indices.end (); ++it)
 	  {
 		geometry_msgs::Point p, minP, maxP;
@@ -242,28 +242,28 @@ void cb(const sensor_msgs::PointCloud2ConstPtr& input)
 	    p.z /= count;
 	    //std::cout << "Minimum dist point is for this cluster is at " << minDistPt[0] << ", " << minDistPt[1] << ", " << minDistPt[2] << std::endl;
 	    ROS_INFO("Avg. dist for this cluster is at %f, %f, %f", p.x, p.y, p.z);
-	    if(p.z < 5 && p.y > -0.7 )//&& p.y < 0.15)
+	    if(p.z < 5 && p.y < 0.25 && p.y > -2.0)
 	    {
 	    	for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); pit++)
 	    	{
 	    		cloud_removed->points[*pit].z = p.z;
-	    		cloud_removed->points[*pit].y = 0.2;
+	    		//cloud_removed->points[*pit].y = 0.2;
 		    	cloud_cluster->points.push_back (cloud_removed->points[*pit]); //*
-				t = sqrt(cloud_removed->points[*pit].x*cloud_removed->points[*pit].x
-					  + cloud_removed->points[*pit].y*cloud_removed->points[*pit].y
+   				t = sqrt(cloud_removed->points[*pit].x*cloud_removed->points[*pit].x
+					  + 0.2*0.2    //y is fixed as 0.2 so that max point is affected only by x
 					  + cloud_removed->points[*pit].z*cloud_removed->points[*pit].z);
 				if(minDist > t)
 				{
 				  minDist = t;
 				  minP.x = cloud_removed->points[*pit].x;
-				  minP.y = cloud_removed->points[*pit].y;
+				  minP.y = p.y;
 				  minP.z = cloud_removed->points[*pit].z;
 				}
 				if(maxDist < t)
 				{
 					maxDist = t;
 					maxP.x = cloud_removed->points[*pit].x;
-					maxP.y = cloud_removed->points[*pit].y;
+					maxP.y = p.y;
 					maxP.z = cloud_removed->points[*pit].z;
 				}
 	    	}
