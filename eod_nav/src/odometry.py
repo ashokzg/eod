@@ -9,6 +9,7 @@ from math import sin, cos, pi
 from geometry_msgs.msg import Quaternion, Twist, Pose
 from nav_msgs.msg import Odometry
 from tf.broadcaster import TransformBroadcaster
+from std_msgs.msg import UInt32
 
 class Odo:
   def __init__(self):
@@ -20,7 +21,7 @@ class Odo:
     self.initSubAndPub()  
   
   def highLevelInits(self):
-    pass
+    self.odomBroadcaster = tf.TransformBroadcaster()
     
     
   def lowLevelInits(self):
@@ -40,12 +41,13 @@ class Odo:
     self.v_des_left = 0 # cmd_vel setpoint
     self.v_des_right = 0
     self.last_cmd_vel = now  
-    self.odomBroadcaster = tf.TransformBroadcaster()
+
   
   def initSubAndPub(self):    
     #Init the subscribers  
     #  UI
     rospy.Subscriber("encTicks", Vector3, self.poll)
+    rospy.Subscriber("Nav_State", UInt32, self.navState)
     self.odomPub = rospy.Publisher('odom', Odometry)
   
   
@@ -63,6 +65,9 @@ class Odo:
     #self.ticks_per_meter = self.encoder_resolution * self.gear_reduction / (self.wheel_diameter * pi)
     self.ticks_per_meter = 80*100/35.0 # 80 ticks/rev, 35cm/rev
 
+  def navState(self, data):
+    if data.data == 2:
+      self.lowLevelInits()
 
   def poll(self, data):
     now = rospy.Time.now()
