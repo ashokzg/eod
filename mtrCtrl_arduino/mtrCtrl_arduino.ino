@@ -19,6 +19,7 @@
 #include <ultrasonic/Ultrasonic.h>
 #include <geometry_msgs/Vector3.h>
 #include "DualVNH5019MotorShield.h"
+#include <std_msgs/UInt32.h>
 //Full Speed = 400 : 0-255 for Analog Write mapped to 400
 
 #define FS 400
@@ -49,6 +50,7 @@ ros::NodeHandle  nh;
 ultrasonic::Ultrasonic us_msg;
 
 geometry_msgs::Vector3 encoder_info;
+
 
 ros::Publisher pub_range( "/ultrasound", &us_msg);
 ros::Publisher pub_enc( "/encTicks", &encoder_info);
@@ -131,7 +133,18 @@ void messageCb( const vel_msgs::Velocity& vel){
   }  
 }
 
+void navCb( const std_msgs::UInt32& data)
+{
+  if(data.data == 2)
+  {
+    LdVal = 0;
+    RdVal = 0;
+  }  
+}
+
+
 ros::Subscriber<vel_msgs::Velocity> sub("cmd_vel", &messageCb );  
+ros::Subscriber<std_msgs::UInt32> navsub("Nav_State", &navCb );  
 
 void setup()
 { 
@@ -139,6 +152,7 @@ void setup()
   md.init();
   nh.initNode();
   nh.subscribe(sub);
+  nh.subscribe(navsub);  
   nh.advertise(pub_range);
   nh.advertise(pub_enc);
 
