@@ -3,7 +3,7 @@ import rospy
 import roslib; roslib.load_manifest('eod_nav')
 
 from teamb_ui.msg import Dest
-import std_msgs.msg
+from std_msgs.msg import UInt32, Int32
 from sensor_msgs.msg import CameraInfo, Range
 from eod_nav.msg import NavDebug
 from ultrasonic.msg import Ultrasonic
@@ -169,16 +169,16 @@ class eodNav:
     #Init the subscribers    
     #    UI
     rospy.Subscriber("UserDestination", Dest, self.userDest)
-    rospy.Subscriber("UiStatus", std_msgs.msg.Int32, self.uiStateHdl)
+    rospy.Subscriber("UiStatus", Int32, self.uiStateHdl)
     rospy.Subscriber("man_cmd_vel", Velocity, self.manCmdVelHdl)
     #    Tracker
     rospy.Subscriber("destination", Dest, self.trackedDest)
     rospy.Subscriber("ultrasound", Ultrasonic, self.ultraSound)
     rospy.Subscriber("clusters", Clusters, self.clusterHdl)
     #Init the publishers
-    self.navStatePub = rospy.Publisher('Nav_State', std_msgs.msg.UInt32)
+    self.navStatePub = rospy.Publisher('Nav_State', UInt32)
     self.robotCmdPub = rospy.Publisher('cmd_vel', Velocity)
-    self.errStatePub = rospy.Publisher('Nav_Error_Id', std_msgs.msg.UInt32)
+    self.errStatePub = rospy.Publisher('Nav_Error_Id', UInt32)
     self.navDebugPub = rospy.Publisher('Nav_Debug', NavDebug)
     #Publish the messages now
     self.navStatePub.publish(self.navState)
