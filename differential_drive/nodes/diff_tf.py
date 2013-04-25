@@ -191,6 +191,7 @@ class DiffTf:
             odom.twist.twist.linear.y = 0
             odom.twist.twist.angular.z = self.dr
             self.odomPub.publish(odom)
+            self.odomBroadcaster.sendTransform((0,0,0.23), (-0.500, 0.485, -0.500, 0.515), rospy.Time.now(), "camera", "base_link")
             
             
 
