@@ -1,0 +1,143 @@
+<!--xml-->
+<robot name="eod_robot">
+
+  <link name="base_link">
+    <visual>
+      <geometry>
+        <box size="0.40 0.13 0.26"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="0 0 0.065"/>
+      <material name="yellow">
+        <color rgba="1 1 0 1"/>
+      </material>
+    </visual>
+  </link>
+  
+  <link name="lwheel">
+    <visual>
+      <geometry>
+        <cylinder length="0.06" radius="0.067"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <material name="green">
+        <color rgba="0 1 0 1"/>
+      </material>
+    </visual>
+  </link>
+  
+  <joint name="base_to_lwheel" type="fixed">
+    <parent link="base_link"/>
+    <child link="lwheel"/>
+    <origin xyz="0.16 0.13 -0.04" rpy="1.5708 0 0"/>
+  </joint>
+  
+  <link name="rwheel">
+    <visual>
+      <geometry>
+        <cylinder length="0.06" radius="0.067"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <material name="green">
+        <color rgba="0 1 0 1"/>
+      </material>
+    </visual>
+  </link>
+  
+  <joint name="base_to_rwheel" type="fixed">
+    <parent link="base_link"/>
+    <child link="rwheel"/>
+    <origin xyz="0.16 -0.13 -0.04" rpy="-1.5708 0 0"/>
+  </joint>
+
+  <link name="lwheel_mid">
+    <visual>
+      <geometry>
+        <cylinder length="0.06" radius="0.067"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <material name="green">
+        <color rgba="0 1 0 1"/>
+      </material>
+    </visual>
+  </link>
+  
+  <joint name="base_to_lwheel_mid" type="fixed">
+    <parent link="base_link"/>
+    <child link="lwheel_mid"/>
+    <origin xyz="0.0 0.13 -0.04" rpy="1.5708 0 0"/>
+  </joint>
+  
+  <link name="rwheel_mid">
+    <visual>
+      <geometry>
+        <cylinder length="0.06" radius="0.067"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <material name="green">
+        <color rgba="0 1 0 1"/>
+      </material>
+    </visual>
+  </link>
+  
+  <joint name="base_to_rwheel_mid" type="fixed">
+    <parent link="base_link"/>
+    <child link="rwheel_mid"/>
+    <origin xyz="0.0 -0.13 -0.04" rpy="-1.5708 0 0"/>
+  </joint>
+
+  <link name="lwheel_end">
+    <visual>
+      <geometry>
+        <cylinder length="0.06" radius="0.067"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <material name="green">
+        <color rgba="0 1 0 1"/>
+      </material>
+    </visual>
+  </link>
+  
+  <joint name="base_to_lwheel_end" type="fixed">
+    <parent link="base_link"/>
+    <child link="lwheel_end"/>
+    <origin xyz="-0.16 0.13 -0.04" rpy="1.5708 0 0"/>
+  </joint>
+  
+  <link name="rwheel_end">
+    <visual>
+      <geometry>
+        <cylinder length="0.06" radius="0.067"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <material name="green">
+        <color rgba="0 1 0 1"/>
+      </material>
+    </visual>
+  </link>
+  
+  <joint name="base_to_rwheel_end" type="fixed">
+    <parent link="base_link"/>
+    <child link="rwheel_end"/>
+    <origin xyz="-0.16 -0.13 -0.04" rpy="-1.5708 0 0"/>
+  </joint>
+    
+  <link name="scanner">
+    <visual>
+      <geometry>
+        <box size="0.015 0.045 0.015"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="0.022 0 0.015"/>
+      <material name="black">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </visual>
+  </link>
+  
+  <joint name="base_to_scanner" type="fixed">
+    <parent link="base_link"/>
+    <child link="scanner"/>
+    <origin xyz="0.185 0 0.26" rpy="0 0 0"/>
+
+  
+</robot>
+

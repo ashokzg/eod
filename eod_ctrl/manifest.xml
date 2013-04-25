@@ -1,0 +1,16 @@
+<package>
+  <description brief="eod_ctrl">
+
+     eod_ctrl
+
+  </description>
+  <author>TeamB</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/eod_ctrl</url>
+  <depend package="differential_drive"/>
+  <depend package="rospy"/>
+
+</package>
+
+
