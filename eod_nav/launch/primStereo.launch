@@ -9,5 +9,5 @@
     <!--node pkg="eod_nav" type="eod_nav.py" name="nav" output="screen"/-->
     <!--node pkg="eod_nav" type="odometry.py" name="odom" output="screen"/-->
     <!--include file="$(find pcl_eod)/launch/pcl_eod.launch" /-->
-    <include file="$(find eod_ctrl)/launch/eod_ctrl.launch"/>    
+    <!--include file="$(find eod_ctrl)/launch/eod_ctrl.launch"/-->    
 </launch>
