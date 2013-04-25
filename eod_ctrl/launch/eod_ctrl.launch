@@ -9,13 +9,13 @@
       <remap from="motor_cmd" to="lmotor_cmd"/>
       <remap from="wheel_vtarget" to="lwheel_vtarget"/>
       <remap from="wheel_vel" to="lwheel_vel"/>
-      <rosparam param="Kp">25</rosparam>
-      <rosparam param="Ki">50</rosparam>
-      <rosparam param="Kd">8</rosparam>
+      <rosparam param="Kp">100</rosparam>
+      <rosparam param="Ki">25</rosparam>
+      <rosparam param="Kd">0</rosparam>
       <rosparam param="out_min">-400</rosparam>
       <rosparam param="out_max">400</rosparam>
       <rosparam param="rate">30</rosparam>
-      <rosparam param="timeout_ticks">4</rosparam>
+      <rosparam param="timeout_ticks">40</rosparam>
       <rosparam param="rolling_pts">5</rosparam>
   </node>
   <node pkg="differential_drive" type="pid_velocity.py" name="rpid_velocity">
@@ -23,13 +23,13 @@
       <remap from="motor_cmd" to="rmotor_cmd"/>
       <remap from="wheel_vtarget" to="rwheel_vtarget"/>
       <remap from="wheel_vel" to="rwheel_vel"/>
-      <rosparam param="Kp">25</rosparam>
-      <rosparam param="Ki">50</rosparam>
-      <rosparam param="Kd">8</rosparam>
+      <rosparam param="Kp">100</rosparam>
+      <rosparam param="Ki">25</rosparam>
+      <rosparam param="Kd">0</rosparam>
       <rosparam param="out_min">-400</rosparam>
       <rosparam param="out_max">400</rosparam>
       <rosparam param="rate">30</rosparam>
-      <rosparam param="timeout_ticks">4</rosparam>
+      <rosparam param="timeout_ticks">40</rosparam>
       <rosparam param="rolling_pts">5</rosparam>
   </node>
 
