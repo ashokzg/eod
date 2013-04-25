@@ -5,6 +5,7 @@
 #include <std_msgs/Int16.h>
 #include <std_msgs/Float32.h>
 #include <ultrasonic/Ultrasonic.h>
+#include <SoftwareServo.h>
 
 
 #define FS 400
@@ -27,7 +28,7 @@ int LdVal = 0, RdVal = 0;
 int leftVel, rightVel;
 int leftDir = 0, rightDir = 0;
 unsigned long rangeTime = 0, encTime = 0;
-
+SoftwareServo servo1;
 
 ros::Publisher pub_range( "/ultrasound", &us_msg);
 ros::Publisher pub_lenc( "/lwheel", &lencoder);
@@ -94,9 +95,24 @@ void navCb( const std_msgs::UInt32& data)
   }  
 }
 
+long servoTime;
+bool done;
+void servoCb( const std_msgs::UInt32& data)
+{
+    if(data.data >= 0 && data.data <= 180)
+    {
+      servo1.attach(SERVO_PIN);        
+      servo1.write(data.data);
+      SoftwareServo::refresh();   
+      servoTime = millis() + 1025;   
+      done = false;
+    }    
+}
+
 ros::Subscriber<std_msgs::Float32> lsub("lmotor_cmd", &leftCb);  
 ros::Subscriber<std_msgs::Float32> rsub("rmotor_cmd", &rightCb);  
 ros::Subscriber<std_msgs::UInt32> navsub("Nav_State", &navCb);  
+ros::Subscriber<std_msgs::UInt32> servosub("servo_angle", &servoCb );  
 
 void setup()
 { 
@@ -106,6 +122,7 @@ void setup()
   nh.subscribe(lsub);
   nh.subscribe(rsub);  
   nh.subscribe(navsub);  
+  nh.subscribe(servosub);   
   nh.advertise(pub_range);
   nh.advertise(pub_lenc);
   nh.advertise(pub_renc);  
@@ -118,6 +135,8 @@ void setup()
   attachInterrupt(1, updateRightEncoder, RISING);
   rangeTime = millis() + 250; 
   encTime = millis() + 20; 
+  servoTime = millis() + 1000; 
+  done = false;  
 }
 
 void loop()
@@ -140,6 +159,17 @@ void loop()
      pub_renc.publish(&rencoder);     
      encTime = millis() + 20; //Publish every 20 ms
   }
+  
+  if(millis() < servoTime && done == false)
+  {
+    SoftwareServo::refresh();
+  }
+  else if(done == false)
+  {
+     servo1.detach();
+     done = true;
+  }
+  
   nh.spinOnce();  
 }
 

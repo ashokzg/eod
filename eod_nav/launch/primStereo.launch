@@ -6,8 +6,8 @@
     <!--include file="$(find eod_teleop)/launch/eod_teleop.launch" /-->
     <!--node pkg="teamb_ui" type="teamb_ui" name="UI" output="screen" /-->
     <node pkg="OpenTLD" type="destinationTLD" name="OpenTLD" output="screen" />
-    <node pkg="eod_nav" type="eod_nav.py" name="nav" output="screen"/>
+    <!--node pkg="eod_nav" type="eod_nav.py" name="nav" output="screen"/-->
     <!--node pkg="eod_nav" type="odometry.py" name="odom" output="screen"/-->
-    <include file="$(find pcl_eod)/launch/pcl_eod.launch" />
+    <!--include file="$(find pcl_eod)/launch/pcl_eod.launch" /-->
     <include file="$(find eod_ctrl)/launch/eod_ctrl.launch"/>    
 </launch>

@@ -9,11 +9,14 @@ from eod_nav.msg import NavDebug
 from ultrasonic.msg import Ultrasonic
 from vel_msgs.msg import Velocity
 from pcl_eod.msg import Clusters
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import Point, Twist
+from nav_msgs.msg import Odometry
+from tf.transformations import euler_from_quaternion
 
 import numpy
 import copy
 import math
+from odometry import Odo
 
 DEBUG = True
 
@@ -131,7 +134,10 @@ class eodNav:
   def lowLevelInits(self):
     self.vel = Velocity() 
     self.manCmdVel = Velocity()  
-    self.navDebug = NavDebug()       
+    self.twist = Twist()
+    self.navDebug = NavDebug()     
+    self.servoAngle = UInt32()
+    self.odom = Odometry()  
     self.vel.linVelPcent = 0.0
     self.vel.angVelPcent = 0.0
     self.manCmdVel.linVelPcent = 0.0
@@ -152,6 +158,7 @@ class eodNav:
     self.TIME_STEP = 50 #ms
     self.AREA_THRESHOLD = 0.20 #If destination is greater than 50% of the image stop.
     self.ultraCount = 0
+    self.avoidState = 0
     
     
   def initCamParams(self):    
@@ -175,22 +182,25 @@ class eodNav:
     rospy.Subscriber("destination", Dest, self.trackedDest)
     rospy.Subscriber("ultrasound", Ultrasonic, self.ultraSound)
     rospy.Subscriber("clusters", Clusters, self.clusterHdl)
+    rospy.Subscriber("odom", Odometry, self.odomHdl)
     #Init the publishers
     self.navStatePub = rospy.Publisher('Nav_State', UInt32)
     self.robotCmdPub = rospy.Publisher('cmd_vel', Velocity)
+    self.robotTwistPub = rospy.Publisher('twist', Twist)    
     self.errStatePub = rospy.Publisher('Nav_Error_Id', UInt32)
     self.navDebugPub = rospy.Publisher('Nav_Debug', NavDebug)
+    self.servoPub = rospy.Publisher('servo_angle', UInt32)
     #Publish the messages now
     self.navStatePub.publish(self.navState)
-    self.robotCmdPub.publish(self.vel)
+    self.setCmdVel()
     
     
   def updateParameters(self):
     self.stLinVel = rospy.get_param("~st_lin", 0.4)
     self.rotLinVel = rospy.get_param("~rot_lin", 0.4)
     self.rotAngVel = rospy.get_param("~rot_ang", 0.2) 
-    self.OBS_AVOID_DIST = rospy.get_param("~obs_avoid_dist", 280)   
-    self.OBS_STOP_DIST = rospy.get_param("~obs_stop_dist", 80)
+    self.OBS_AVOID_DIST = rospy.get_param("~obs_avoid_dist", 50)   
+    self.OBS_STOP_DIST = rospy.get_param("~obs_stop_dist", 20)
     self.obsStLinVel = rospy.get_param("~obs_st_lin", 0.3)
     self.obsRotLinVel = rospy.get_param("~obs_rot_lin", 0.3)
     self.obsRotAngVel = rospy.get_param("~obs_rot_ang", 0.1)
@@ -222,14 +232,14 @@ class eodNav:
     #Smoothes the ultrasonic data with a gaussian filter
     #Distance is a list of ultrasonic [left, center, right]
     self.dist = self.processUltrasound(data)    
-    #self.OBS_AVOID = 0
+    self.OBS_AVOID = 0
     self.OBS_STOP = 0
     #Time required to stablize
     if self.ultraCount > 4:
       for i in range(3):
         if self.dist[i] < self.OBS_AVOID_DIST:
           pass
-          #self.OBS_AVOID |= self.OBS_IDX[i]
+          self.OBS_AVOID |= self.OBS_IDX[i]
         if self.dist[i] < self.OBS_STOP_DIST:
           pass
           self.OBS_STOP |= self.OBS_IDX[i]
@@ -268,7 +278,13 @@ class eodNav:
       
   def eucdist(self, p1, p2):    
     return math.sqrt((p1.x - p2.x)**2 + (p1.y - p2.y)**2 + (p1.z - p2.z)**2)
-      
+
+  def odomHdl(self, data):
+    X = data.pose.pose.position.x
+    Y = data.pose.pose.position.y
+    o = data.pose.pose.orientation      
+    T = euler_from_quaternion([o.x, o.y, o.z, o.w])[2]
+    self.robotPose = [X, Y, T]
   #===============================================================
   #
   #    MAIN NAVIGATION HANDLING
@@ -314,8 +330,12 @@ class eodNav:
 
 
   def manualModeStateHandler(self):
-    self.vel = self.manCmdVel
-    self.robotCmdPub.publish(self.vel)
+    if self.navStateChange == True:
+      self.vel.linVelPcent = 0
+      self.vel.angVelPcent = 0
+    else:
+      self.vel = self.manCmdVel
+    self.setCmdVel()
 
 
   def errorStateHandler(self):
@@ -356,12 +376,17 @@ class eodNav:
     self.manCmdVel = copy.deepcopy(data)
         
   def setCmdVel(self):
-    if self.dist[1] > 0.2:
-      self.robotCmdPub.publish(self.vel)
+    if self.dist[1] > 5:
+      pass
+      #self.robotCmdPub.publish(self.vel)
     else:
       print "STOPPING"
       self.vel.linVelPcent = 0.0
       self.vel.angVelPcent = 0.0
+    self.twist.linear.x = self.vel.linVelPcent
+    self.twist.angular.z = self.vel.angVelPcent
+    self.robotTwistPub.publish(self.twist)      
+      
 
   #===============================================================
   #
@@ -407,6 +432,9 @@ class eodNav:
   
   
   def autoDestInSight(self):
+    if self.autoStateChange == True:
+      self.servoAngle.data = 90
+      self.servoPub.publish(self.servoAngle)
     #print "tracking in state", self.navState 
     leftLimit, rightLimit = self.calcZone();      
     cx = self.dest.destX + self.dest.destWidth/2
@@ -427,22 +455,67 @@ class eodNav:
 
   
   def autoObsAvoidance(self):
-    #calczone defines where we maintain our destination
-    leftLimit, rightLimit = self.calcZone();      
-    cx = self.dest.destX + self.dest.destWidth/2
-    cy = self.dest.destY + self.dest.destHeight/2
-    #If the destination is slipping towards the left, turn left
-    if cx < leftLimit:
-      self.vel.linVelPcent = self.obsRotLinVel
-      self.vel.angVelPcent = self.obsRotAngVel
-    #If the destination is slipping towards the right, turn right
-    elif cx > rightLimit:
-      self.vel.linVelPcent = self.obsRotLinVel
-      self.vel.angVelPcent = -self.obsRotAngVel
-    #We are good to zip towards the destination
-    else:
-      self.vel.linVelPcent = self.obsStLinVel
+    if self.autoStateChange == True:
+      self.obsAvoidCount = 0
+      self.avoidState = 0
+    self.obsAvoidCount += 1
+    if self.obsAvoidCount < 10:
+      print "Avoidance initializing"
+      self.vel.linVelPcent = 0
+      self.vel.angVelPcent = 0
+      if self.obsAvoidCount == 9:
+        self.startPose = copy.deepcopy(self.robotPose)
+        self.desPose = copy.deepcopy(self.robotPose)
+        self.desPose[2] -= numpy.pi/2
+        self.avoidState = 1
+    elif self.avoidState == 1 and self.robotPose[2]-self.desPose[2] > 0.1:
+      self.moveBase()
+    elif self.avoidState == 1:
+      self.avoidState = 2
+      self.servoAngle.data = 0
+      self.vel.linVelPcent = 0
+      self.vel.angVelPcent = 0
+      self.servoPub.publish(self.servoAngle)  
+      self.wait = self.obsAvoidCount + (2000/self.TIME_STEP)
+    elif self.avoidState == 2:
+      if self.wait < self.obsAvoidCount:
+        self.avoidState = 3
+    elif self.avoidState == 3:
+      if self.OBS_AVOID > 0:
+        self.vel.linVelPcent = 0.3
+        self.vel.angVelPcent = 0.0
+      else:
+        self.vel.linVelPcent = 0
+        self.vel.angVelPcent = 0
+        self.avoidState = 4
+        self.desPose = copy.deepcopy(self.robotPose)
+        self.desPose[2] += numpy.pi/2        
+    elif self.avoidState == 4 and self.robotPose[2]-self.desPose[2] > 1:      
+      self.moveBase()     
+    elif self.avoidState == 4:
+      self.avoidState = 5
+    elif self.avoidState == 5:
+      self.vel.linVelPcent = 0.3
+      self.vel.angVelPcent = 0
+      if self.OBS_AVOID > 0:
+        self.avoidState = 6
+    elif self.avoidState == 6:
+      self.vel.linVelPcent = 0.3
+      self.vel.angVelPcent = 0
+      if self.OBS_AVOID == 0:
+        self.avoidState = 7      
+    elif self.avoidState == 7:
+      self.vel.linVelPcent = 0.0
       self.vel.angVelPcent = 0.0
+      self.servoAngle.data = 90
+      self.servoPub.publish(self.servoAngle)
+      self.wait = self.obsAvoidCount + (2000/self.TIME_STEP)
+      self.avoidState = 8
+    elif self.avoidState == 8:
+      if self.wait < self.obsAvoidCount:
+        self.avoidState = 9                      
+    else:
+      rospy.loginfo("Obstacle avoidance algo complete")
     self.setCmdVel()      
   
       
@@ -620,7 +693,19 @@ class eodNav:
       self.OBS_AVOID = self.OBS_AVOID & (~self.OBS_L)
     if self.pclObsCountRight*self.TIME_STEP > 5000:
       self.OBS_AVOID = self.OBS_AVOID & (~self.OBS_R)
-      
+  
+  def moveBase(self):
+    print "moving base"
+    if abs(self.desPose[2] - self.robotPose[2]) > 0.1:      
+      self.vel.linVelPcent = 0.0
+      if self.desPose[2] - self.robotPose[2] > 0:
+        self.vel.angVelPcent = 2.0
+      else:
+        self.vel.angVelPcent = -2.0              
+    else:
+      self.vel.linVelPcent = 0.0
+      self.vel.angVelPcent = 0.0
+        
   
   def search_destination(self):    
     print "Searching for Destination"
@@ -715,6 +800,7 @@ class eodNav:
     #print data.ultra_left, data.ultra_centre, data.ultra_right,
     s += "Nav: " + self.navStatePrintNames[self.navState] + " Auto: " + self.autoStatePrintNames[self.autoState]
     s += " Dest: " + str(self.dest.destPresent)
+    s += " A: " + str(self.avoidState) 
     s += " Obs Avoid: " + str([self.OBS_AVOID & self.OBS_L, self.OBS_AVOID & self.OBS_C, self.OBS_AVOID & self.OBS_R])
     s += " Obs Stop: " + str([self.OBS_STOP & self.OBS_L, self.OBS_STOP & self.OBS_C, self.OBS_STOP & self.OBS_R])
     if DEBUG == True:
@@ -806,14 +892,14 @@ class eodNav:
       (AUTO.DEST_IN_SIGHT,       1,0,1) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
       (AUTO.DEST_IN_SIGHT,       1,1,0) : (AUTO.ERROR               , ERR.ERR_DYNAMIC_OBSTACLE),
       (AUTO.DEST_IN_SIGHT,       1,1,1) : (AUTO.ERROR               , ERR.ERR_DYNAMIC_OBSTACLE),
-      (AUTO.OBS_AVOIDANCE,       0,0,0) : (AUTO.DEST_SEARCH         , ERR.NONE                ),
+      (AUTO.OBS_AVOIDANCE,       0,0,0) : (AUTO.OBS_AVOIDANCE       , ERR.NONE                ),
       (AUTO.OBS_AVOIDANCE,       0,0,1) : (AUTO.DEST_IN_SIGHT       , ERR.NONE                ),
-      (AUTO.OBS_AVOIDANCE,       0,1,0) : (AUTO.OBS_BACKTRACK       , ERR.NONE                ),
+      (AUTO.OBS_AVOIDANCE,       0,1,0) : (AUTO.OBS_AVOIDANCE       , ERR.NONE                ),
       (AUTO.OBS_AVOIDANCE,       0,1,1) : (AUTO.OBS_AVOIDANCE       , ERR.NONE                ),
       (AUTO.OBS_AVOIDANCE,       1,0,0) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
       (AUTO.OBS_AVOIDANCE,       1,0,1) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
-      (AUTO.OBS_AVOIDANCE,       1,1,0) : (AUTO.OBS_BACKTRACK       , ERR.NONE                ),
-      (AUTO.OBS_AVOIDANCE,       1,1,1) : (AUTO.OBS_CUTTING_CORNER  , ERR.NONE                ),
+      (AUTO.OBS_AVOIDANCE,       1,1,0) : (AUTO.OBS_AVOIDANCE       , ERR.NONE                ),
+      (AUTO.OBS_AVOIDANCE,       1,1,1) : (AUTO.OBS_AVOIDANCE       , ERR.NONE                ),
       (AUTO.OBS_BACKTRACK,       0,0,0) : (AUTO.DEST_SEARCH         , ERR.NONE                ),
       (AUTO.OBS_BACKTRACK,       0,0,1) : (AUTO.DEST_IN_SIGHT       , ERR.NONE                ),
       (AUTO.OBS_BACKTRACK,       0,1,0) : (AUTO.OBS_BACKTRACK       , ERR.NONE                ),
