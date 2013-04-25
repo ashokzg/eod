@@ -20,6 +20,7 @@
 #include <geometry_msgs/Vector3.h>
 #include "DualVNH5019MotorShield.h"
 #include <std_msgs/UInt32.h>
+#include <SoftwareServo.h>
 //Full Speed = 400 : 0-255 for Analog Write mapped to 400
 
 #define FS 400
@@ -28,6 +29,7 @@
 #define ULTRA_LEFT A2
 #define ENC_LEFT 3
 #define ENC_RIGHT 2
+#define SERVO_PIN 11
 //#define PROBE_PIN 8
 
 #define UREAD 0
@@ -50,6 +52,7 @@ ros::NodeHandle  nh;
 ultrasonic::Ultrasonic us_msg;
 
 geometry_msgs::Vector3 encoder_info;
+SoftwareServo servo1;
 
 
 ros::Publisher pub_range( "/ultrasound", &us_msg);
@@ -141,10 +144,21 @@ void navCb( const std_msgs::UInt32& data)
     RdVal = 0;
   }  
 }
-
+static int servoTime;
+void servoCb( const std_msgs::UInt32& data)
+{
+    if(data.data >= 0 && data.data <= 180)
+    {
+      servo1.attach(SERVO_PIN);        
+      servo1.write(data.data);
+      SoftwareServo::refresh();   
+      servoTime = millis() + 1025;   
+    }    
+}
 
 ros::Subscriber<vel_msgs::Velocity> sub("cmd_vel", &messageCb );  
 ros::Subscriber<std_msgs::UInt32> navsub("Nav_State", &navCb );  
+ros::Subscriber<std_msgs::UInt32> servosub("servo_angle", &servoCb );  
 
 void setup()
 { 
@@ -153,17 +167,22 @@ void setup()
   nh.initNode();
   nh.subscribe(sub);
   nh.subscribe(navsub);  
+  nh.subscribe(servosub);    
   nh.advertise(pub_range);
   nh.advertise(pub_enc);
+  
 
   pinMode(ENC_RIGHT, INPUT);
   digitalWrite(ENC_RIGHT, HIGH);
   pinMode(ENC_LEFT, INPUT);
   digitalWrite(ENC_LEFT, HIGH);
-  
   attachInterrupt(0, updateRightEncoder, RISING); 
   attachInterrupt(1, updateLeftEncoder, RISING);
-
+  servo1.attach(SERVO_PIN);  
+  servo1.setMaximumPulse(2200);  
+  servoTime = 0;
+  servo1.write(90);  
+  servo1.detach();
 }
 
 long range_time, probe_time, enc_time;
@@ -212,6 +231,8 @@ void loop()
      pub_enc.publish(&encoder_info); 
      enc_time = millis() + 25;
   }
-  
+  SoftwareServo::refresh();
+  if(millis() > servoTime)
+     servo1.detach();
   nh.spinOnce();
-}
+} 
