@@ -9,11 +9,13 @@
 
 
 #define FS 400
-#define ULTRA_FRONT A0
+#define ULTRA_FRONT A3
 //#define ULTRA_RIGHT A1
 //#define ULTRA_LEFT A2
-#define ENC_LEFT 3
-#define ENC_RIGHT 2
+#define ENC_RIGHT 19
+#define ENC_LEFT 18
+#define ENC_INT_RIGHT 4
+#define ENC_INT_LEFT 5
 #define SERVO_PIN 11
 
 
@@ -67,9 +69,7 @@ void updateLeftEncoder()
 void leftCb( const std_msgs::Float32& data)
 {
   leftVel = (int)data.data;
-  md.setM2Speed(-leftVel); 
-  //nh.loginfo("In left Call Back %d", leftVel);
-  
+  md.setM1Speed(leftVel);   
   if(leftVel < 0)
     leftDir = 1; 
   else
@@ -79,7 +79,7 @@ void leftCb( const std_msgs::Float32& data)
 void rightCb( const std_msgs::Float32& data)
 {
   rightVel = (int)data.data;
-  md.setM1Speed(rightVel); 
+  md.setM2Speed(-rightVel); 
   if(rightVel < 0)
     rightDir = 1; 
   else
@@ -131,8 +131,8 @@ void setup()
   digitalWrite(ENC_RIGHT, HIGH);
   pinMode(ENC_LEFT, INPUT);
   digitalWrite(ENC_LEFT, HIGH);
-  attachInterrupt(0, updateLeftEncoder, RISING); 
-  attachInterrupt(1, updateRightEncoder, RISING);
+  attachInterrupt(ENC_INT_LEFT, updateLeftEncoder, RISING); 
+  attachInterrupt(ENC_INT_RIGHT, updateRightEncoder, RISING);
   rangeTime = millis() + 250; 
   encTime = millis() + 20; 
   servoTime = millis() + 1000; 
