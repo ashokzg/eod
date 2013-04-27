@@ -75,8 +75,8 @@ class DiffTf:
         
         #### parameters #######
         self.rate = rospy.get_param('~rate',10.0)  # the rate at which to publish the transform
-        self.ticks_meter = float(rospy.get_param('ticks_meter', 50))  # The number of wheel encoder ticks per meter of travel
-        self.base_width = float(rospy.get_param('~base_width', 0.245)) # The wheel base width in meters
+        self.ticks_meter = float(rospy.get_param('ticks_meter', 282.5))  # The number of wheel encoder ticks per meter of travel
+        self.base_width = float(rospy.get_param('~base_width', 0.26)) # The wheel base width in meters
         
         self.base_frame_id = rospy.get_param('~base_frame_id','base_link') # the name of the base frame of the robot
         self.odom_frame_id = rospy.get_param('~odom_frame_id', 'odom') # the name of the odometry reference frame
@@ -85,9 +85,7 @@ class DiffTf:
         self.encoder_max = rospy.get_param('encoder_max', 32768)
         self.encoder_low_wrap = rospy.get_param('wheel_low_wrap', (self.encoder_max - self.encoder_min) * 0.3 + self.encoder_min )
         self.encoder_high_wrap = rospy.get_param('wheel_high_wrap', (self.encoder_max - self.encoder_min) * 0.7 + self.encoder_min )
- 
-        self.t_delta = rospy.Duration(1.0/self.rate)
-        self.t_next = rospy.Time.now() + self.t_delta
+
         
         self.lowLevelInits()
         
@@ -99,6 +97,9 @@ class DiffTf:
         self.odomBroadcaster = TransformBroadcaster()
     
     def lowLevelInits(self):
+ 
+        self.t_delta = rospy.Duration(1.0/self.rate)
+        self.t_next = rospy.Time.now() + self.t_delta
         # internal data
         self.enc_left = None        # wheel encoder readings
         self.enc_right = None
