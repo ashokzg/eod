@@ -196,14 +196,22 @@ class eodNav:
     
     
   def updateParameters(self):
-    self.stLinVel = rospy.get_param("~st_lin", 0.4)
-    self.rotLinVel = rospy.get_param("~rot_lin", 0.4)
-    self.rotAngVel = rospy.get_param("~rot_ang", 0.2) 
-    self.OBS_AVOID_DIST = rospy.get_param("~obs_avoid_dist", 50)   
+#     self.stLinVel = rospy.get_param("~st_lin", 0.4)
+#     self.rotLinVel = rospy.get_param("~rot_lin", 0.4)
+#     self.rotAngVel = rospy.get_param("~rot_ang", 0.2) 
+#     self.OBS_AVOID_DIST = rospy.get_param("~obs_avoid_dist", 50)   
+#     self.OBS_STOP_DIST = rospy.get_param("~obs_stop_dist", 20)
+#     self.obsStLinVel = rospy.get_param("~obs_st_lin", 0.3)
+#     self.obsRotLinVel = rospy.get_param("~obs_rot_lin", 0.3)
+#     self.obsRotAngVel = rospy.get_param("~obs_rot_ang", 0.1)
+    self.stLinVel = 0.5
+    self.rotLinVel = 0.5
+    self.rotAngVel = 2
+    self.OBS_AVOID_DIST = rospy.get_param("~obs_avoid_dist", 100)   
     self.OBS_STOP_DIST = rospy.get_param("~obs_stop_dist", 20)
-    self.obsStLinVel = rospy.get_param("~obs_st_lin", 0.3)
-    self.obsRotLinVel = rospy.get_param("~obs_rot_lin", 0.3)
-    self.obsRotAngVel = rospy.get_param("~obs_rot_ang", 0.1)
+    self.obsStLinVel = 0.4
+    self.obsRotLinVel = 0.4
+    self.obsRotAngVel = 2    
     self.cameraName = rospy.get_param("/eod_cam", "camera/image_raw") 
     #Reset the parameters so that it would be easily visible to debug
     rospy.set_param("~st_lin_vel", self.stLinVel)
@@ -461,7 +469,7 @@ class eodNav:
     self.obsAvoidCount += 1
     if self.obsAvoidCount < 10:
       print "Avoidance initializing"
-      self.vel.linVelPcent = 0
+      self.vel.linVelPcent = 0.3
       self.vel.angVelPcent = 0
       if self.obsAvoidCount == 9:
         self.startPose = copy.deepcopy(self.robotPose)
@@ -472,7 +480,7 @@ class eodNav:
       self.moveBase()
     elif self.avoidState == 1:
       self.avoidState = 2
-      self.servoAngle.data = 0
+      self.servoAngle.data = 180
       self.vel.linVelPcent = 0
       self.vel.angVelPcent = 0
       self.servoPub.publish(self.servoAngle)  
@@ -699,9 +707,9 @@ class eodNav:
     if abs(self.desPose[2] - self.robotPose[2]) > 0.1:      
       self.vel.linVelPcent = 0.0
       if self.desPose[2] - self.robotPose[2] > 0:
-        self.vel.angVelPcent = 2.0
+        self.vel.angVelPcent = 5.5
       else:
-        self.vel.angVelPcent = -2.0              
+        self.vel.angVelPcent = -5.5              
     else:
       self.vel.linVelPcent = 0.0
       self.vel.angVelPcent = 0.0
@@ -873,7 +881,45 @@ class eodNav:
         yield x
         x -= jump
 
+
   def defineAutoStateTransitionMatrix(self):
+    self.autoStateTrans = {
+      #(Current State, Obs Stopping, Obs avoid, Dest Present) : [Next State, Comments]
+      (AUTO.IDLE,                0,0,0) : (AUTO.IDLE                , ERR.NONE                ),
+      (AUTO.IDLE,                0,0,1) : (AUTO.DEST_IN_SIGHT       , ERR.NONE                ),
+      (AUTO.IDLE,                0,1,0) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
+      (AUTO.IDLE,                0,1,1) : (AUTO.OBS_AVOIDANCE       , ERR.NONE                ),
+      (AUTO.IDLE,                1,0,0) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
+      (AUTO.IDLE,                1,0,1) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
+      (AUTO.IDLE,                1,1,0) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
+      (AUTO.IDLE,                1,1,1) : (AUTO.ERROR               , ERR.ERR_STUPID          ),
+      (AUTO.DEST_IN_SIGHT,       0,0,0) : (AUTO.OBS_AVOIDANCE       , ERR.NONE                ),
+      (AUTO.DEST_IN_SIGHT,       0,0,1) : (AUTO.DEST_IN_SIGHT       , ERR.NONE                ),
+      (AUTO.DEST_IN_SIGHT,       0,1,0) : (AUTO.OBS_AVOIDANCE       , ERR.NONE                ),
+      (AUTO.DEST_IN_SIGHT,       0,1,1) : (AUTO.OBS_AVOIDANCE       , ERR.NONE                ),
+      (AUTO.DEST_IN_SIGHT,       1,0,0) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
+      (AUTO.DEST_IN_SIGHT,       1,0,1) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
+      (AUTO.DEST_IN_SIGHT,       1,1,0) : (AUTO.OBS_AVOIDANCE       , ERR.ERR_DYNAMIC_OBSTACLE),
+      (AUTO.DEST_IN_SIGHT,       1,1,1) : (AUTO.OBS_AVOIDANCE       , ERR.ERR_DYNAMIC_OBSTACLE),
+      (AUTO.OBS_AVOIDANCE,       0,0,0) : (AUTO.OBS_AVOIDANCE       , ERR.NONE                ),
+      (AUTO.OBS_AVOIDANCE,       0,0,1) : (AUTO.DEST_IN_SIGHT       , ERR.NONE                ),
+      (AUTO.OBS_AVOIDANCE,       0,1,0) : (AUTO.OBS_AVOIDANCE       , ERR.NONE                ),
+      (AUTO.OBS_AVOIDANCE,       0,1,1) : (AUTO.OBS_AVOIDANCE       , ERR.NONE                ),
+      (AUTO.OBS_AVOIDANCE,       1,0,0) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
+      (AUTO.OBS_AVOIDANCE,       1,0,1) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
+      (AUTO.OBS_AVOIDANCE,       1,1,0) : (AUTO.OBS_AVOIDANCE       , ERR.NONE                ),
+      (AUTO.OBS_AVOIDANCE,       1,1,1) : (AUTO.OBS_AVOIDANCE       , ERR.NONE                ),
+      (AUTO.ERROR,               0,0,0) : (AUTO.ERROR               , ERR.PREVIOUS            ),
+      (AUTO.ERROR,               0,0,1) : (AUTO.ERROR               , ERR.PREVIOUS            ),
+      (AUTO.ERROR,               0,1,0) : (AUTO.ERROR               , ERR.PREVIOUS            ),
+      (AUTO.ERROR,               0,1,1) : (AUTO.ERROR               , ERR.PREVIOUS            ),
+      (AUTO.ERROR,               1,0,0) : (AUTO.ERROR               , ERR.PREVIOUS            ),
+      (AUTO.ERROR,               1,0,1) : (AUTO.ERROR               , ERR.PREVIOUS            ),
+      (AUTO.ERROR,               1,1,0) : (AUTO.ERROR               , ERR.PREVIOUS            ),
+      (AUTO.ERROR,               1,1,1) : (AUTO.ERROR               , ERR.PREVIOUS            )}    
+
+
+  def defineAutoStateTransitionMatrix1(self):
     self.autoStateTrans = {
       #(Current State, Obs Stopping, Obs avoid, Dest Present) : [Next State, Comments]
       (AUTO.IDLE,                0,0,0) : (AUTO.IDLE                , ERR.NONE                ),
@@ -886,7 +932,7 @@ class eodNav:
       (AUTO.IDLE,                1,1,1) : (AUTO.ERROR               , ERR.ERR_STUPID          ),
       (AUTO.DEST_IN_SIGHT,       0,0,0) : (AUTO.DEST_SEARCH         , ERR.NONE                ),
       (AUTO.DEST_IN_SIGHT,       0,0,1) : (AUTO.DEST_IN_SIGHT       , ERR.NONE                ),
-      (AUTO.DEST_IN_SIGHT,       0,1,0) : (AUTO.OBS_BACKTRACK       , ERR.NONE                ),
+      (AUTO.DEST_IN_SIGHT,       0,1,0) : (AUTO.OBS_AVOIDANCE       , ERR.NONE                ),
       (AUTO.DEST_IN_SIGHT,       0,1,1) : (AUTO.OBS_AVOIDANCE       , ERR.NONE                ),
       (AUTO.DEST_IN_SIGHT,       1,0,0) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
       (AUTO.DEST_IN_SIGHT,       1,0,1) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
