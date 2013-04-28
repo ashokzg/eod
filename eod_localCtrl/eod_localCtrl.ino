@@ -5,7 +5,7 @@
 #include <std_msgs/Int16.h>
 #include <std_msgs/Float32.h>
 #include <ultrasonic/Ultrasonic.h>
-#include <SoftwareServo.h>
+#include <Servo.h> 
 
 
 #define FS 400
@@ -30,7 +30,7 @@ int LdVal = 0, RdVal = 0;
 int leftVel, rightVel;
 int leftDir = 0, rightDir = 0;
 unsigned long rangeTime = 0, encTime = 0;
-SoftwareServo servo1;
+Servo servo1;
 
 ros::Publisher pub_range( "/ultrasound", &us_msg);
 ros::Publisher pub_lenc( "/lwheel", &lencoder);
@@ -95,17 +95,11 @@ void navCb( const std_msgs::UInt32& data)
   }  
 }
 
-long servoTime;
-bool done;
 void servoCb( const std_msgs::UInt32& data)
 {
     if(data.data >= 0 && data.data <= 180)
     {
-      servo1.attach(SERVO_PIN);        
       servo1.write(data.data);
-      SoftwareServo::refresh();   
-      servoTime = millis() + 1025;   
-      done = false;
     }    
 }
 
@@ -135,8 +129,7 @@ void setup()
   attachInterrupt(ENC_INT_RIGHT, updateRightEncoder, RISING);
   rangeTime = millis() + 250; 
   encTime = millis() + 20; 
-  servoTime = millis() + 1000; 
-  done = false;  
+  servo1.attach(SERVO_PIN); 
 }
 
 void loop()
@@ -160,15 +153,6 @@ void loop()
      encTime = millis() + 20; //Publish every 20 ms
   }
   
-  if(millis() < servoTime && done == false)
-  {
-    SoftwareServo::refresh();
-  }
-  else if(done == false)
-  {
-     servo1.detach();
-     done = true;
-  }
   
   nh.spinOnce();  
 }
