@@ -545,7 +545,7 @@ class eodNav:
         self.vel.angVelPcent = 0
         self.avoidState = 10
     else:
-        rospy.loginfo("Obstacle avoidance algo complete")
+      rospy.loginfo("Obstacle avoidance algo complete")
     self.setCmdVel()      
  
   def sweep(self):
@@ -746,9 +746,9 @@ class eodNav:
     if abs(self.desPose[2] - self.robotPose[2]) > 0.1:      
       self.vel.linVelPcent = 0.0
       if self.desPose[2] - self.robotPose[2] > 0:
-        self.vel.angVelPcent = 5.5
+        self.vel.angVelPcent = 2.0
       else:
-        self.vel.angVelPcent = -5.5              
+        self.vel.angVelPcent = -2.0              
     else:
       self.vel.linVelPcent = 0.0
       self.vel.angVelPcent = 0.0

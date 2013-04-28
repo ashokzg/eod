@@ -85,6 +85,7 @@ class DiffTf:
         self.encoder_max = rospy.get_param('encoder_max', 32768)
         self.encoder_low_wrap = rospy.get_param('wheel_low_wrap', (self.encoder_max - self.encoder_min) * 0.3 + self.encoder_min )
         self.encoder_high_wrap = rospy.get_param('wheel_high_wrap', (self.encoder_max - self.encoder_min) * 0.7 + self.encoder_min )
+ 
 
         
         self.lowLevelInits()
@@ -97,7 +98,6 @@ class DiffTf:
         self.odomBroadcaster = TransformBroadcaster()
     
     def lowLevelInits(self):
- 
         self.t_delta = rospy.Duration(1.0/self.rate)
         self.t_next = rospy.Time.now() + self.t_delta
         # internal data
