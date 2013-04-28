@@ -752,9 +752,16 @@ class eodNav:
         if self.applyAutoState != None:
           self.autoState = self.applyAutoState
         else:
-          t = self.autoStateTrans[(self.autoState, os, oa, dl)]      
-          self.autoState = t[0]
-          self.autoErrId = t[1]
+          if self.autoState == AUTO.OBSTACLE_AVOIDANCE and self.obsAvoidStart == False:
+            self.desPose = copy.deepcopy(self.robotPose)
+            self.desPose = self.desPose[0] + self.dist[1]/100 + 0.3
+            self.obsAvoidStart = True
+          if self.robotPose[0] > self.desPose[0]
+            self.obsAvoidStart = False
+          if self.obsAvoidStart == False:
+            t = self.autoStateTrans[(self.autoState, os, oa, dl)]      
+            self.autoState = t[0]
+            self.autoErrId = t[1]
       if self.prevAutoState != self.autoState:
         stateChange = True
     except KeyError:
