@@ -160,6 +160,7 @@ class eodNav:
     self.ultraCount = 0
     self.avoidState = 0
     self.sweepDist = [600]*18
+    self.sweepSet = False    
     
     
   def initCamParams(self):    
@@ -205,14 +206,14 @@ class eodNav:
 #     self.obsStLinVel = rospy.get_param("~obs_st_lin", 0.3)
 #     self.obsRotLinVel = rospy.get_param("~obs_rot_lin", 0.3)
 #     self.obsRotAngVel = rospy.get_param("~obs_rot_ang", 0.1)
-    self.stLinVel = 0.5
-    self.rotLinVel = 0.5
-    self.rotAngVel = 2
-    self.OBS_AVOID_DIST = rospy.get_param("~obs_avoid_dist", 100)   
+    self.stLinVel = 0.3
+    self.rotLinVel = 0.3
+    self.rotAngVel = 0.2
+    self.OBS_AVOID_DIST = 150 #rospy.get_param("~obs_avoid_dist", 100)   
     self.OBS_STOP_DIST = rospy.get_param("~obs_stop_dist", 20)
-    self.obsStLinVel = 0.4
-    self.obsRotLinVel = 0.4
-    self.obsRotAngVel = 2    
+    self.obsStLinVel = 0.3
+    self.obsRotLinVel = 0.3
+    self.obsRotAngVel = 0.1    
     self.cameraName = rospy.get_param("/eod_cam", "camera/image_raw") 
     #Reset the parameters so that it would be easily visible to debug
     rospy.set_param("~st_lin_vel", self.stLinVel)
@@ -339,6 +340,13 @@ class eodNav:
 
 
   def manualModeStateHandler(self):
+   # if self.navStateChange == 0:
+   #   self.sweepState = 0
+   #   self.sweepCount = 0
+   # if self.sweepState < 20:
+   #   self.sweep()
+   # else:
+   #   print self.sweepDist
     if self.navStateChange == True:
       self.vel.linVelPcent = 0
       self.vel.angVelPcent = 0
@@ -385,7 +393,7 @@ class eodNav:
     self.manCmdVel = copy.deepcopy(data)
         
   def setCmdVel(self):
-    if self.dist[1] > 5:
+    if self.dist[1] > 20:
       pass
       #self.robotCmdPub.publish(self.vel)
     else:
@@ -470,11 +478,11 @@ class eodNav:
       self.sweepState = 0
     self.obsAvoidCount += 1
     #Simply moving forward
-    if self.obsAvoidCount < 10:
+    if self.obsAvoidCount < 4:
       print "Avoidance initializing"
-      self.vel.linVelPcent = 0.3
+      self.vel.linVelPcent = 0.25
       self.vel.angVelPcent = 0
-      if self.obsAvoidCount == 9:
+      if self.obsAvoidCount == 3:
         self.startPose = copy.deepcopy(self.robotPose)
         self.desPose = copy.deepcopy(self.robotPose)
         self.desPose[2] -= numpy.pi/2
@@ -489,7 +497,7 @@ class eodNav:
       self.vel.linVelPcent = 0
       self.vel.angVelPcent = 0
       self.servoPub.publish(self.servoAngle)  
-      self.wait = self.obsAvoidCount + (2000/self.TIME_STEP)
+      self.wait = self.obsAvoidCount + (8000/self.TIME_STEP)
     #wait to finish turn
     elif self.avoidState == 2:
       if self.wait < self.obsAvoidCount:
@@ -497,7 +505,7 @@ class eodNav:
     #Move until no obstacle seen
     elif self.avoidState == 3:
       if self.OBS_AVOID > 0:
-        self.vel.linVelPcent = 0.3
+        self.vel.linVelPcent = 0.25
         self.vel.angVelPcent = 0.0
       else:
         self.vel.linVelPcent = 0
@@ -513,13 +521,13 @@ class eodNav:
       self.avoidState = 5
     #Move forward towards destination
     elif self.avoidState == 5:
-      self.vel.linVelPcent = 0.3
+      self.vel.linVelPcent = 0.25
       self.vel.angVelPcent = 0
       if self.OBS_AVOID > 0:
         self.avoidState = 6
     #Keep moving forward
     elif self.avoidState == 6:
-      self.vel.linVelPcent = 0.3
+      self.vel.linVelPcent = 0.25
       self.vel.angVelPcent = 0
       if self.OBS_AVOID == 0:
         self.avoidState = 7
@@ -529,7 +537,7 @@ class eodNav:
       self.vel.angVelPcent = 0.0
       self.servoAngle.data = 90
       self.servoPub.publish(self.servoAngle)
-      self.wait = self.obsAvoidCount + (2000/self.TIME_STEP)
+      self.wait = self.obsAvoidCount + (8000/self.TIME_STEP)
       self.avoidState = 8
     #wait for servo to finish
     elif self.avoidState == 8:
@@ -537,7 +545,7 @@ class eodNav:
         self.avoidState = 9
         self.wait = self.obsAvoidCount + (20000/self.TIME_STEP)
         self.vel.linVelPcent = 0
-        self.vel.angVelPcent = 0.3
+        self.vel.angVelPcent = 0.40
         self.setCmdVel()                 
     elif self.avoidState == 9:
       if self.wait < self.obsAvoidCount:
@@ -746,9 +754,9 @@ class eodNav:
     if abs(self.desPose[2] - self.robotPose[2]) > 0.1:      
       self.vel.linVelPcent = 0.0
       if self.desPose[2] - self.robotPose[2] > 0:
-        self.vel.angVelPcent = 2.0
+        self.vel.angVelPcent = 0.4
       else:
-        self.vel.angVelPcent = -2.0              
+        self.vel.angVelPcent = -0.40              
     else:
       self.vel.linVelPcent = 0.0
       self.vel.angVelPcent = 0.0

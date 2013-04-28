@@ -1,4 +1,4 @@
-#include <ros.h>
+ #include <ros.h>
 #include <ros/time.h>
 #include "DualVNH5019MotorShield.h"
 #include <std_msgs/UInt32.h>
@@ -17,9 +17,9 @@
 #define ENC_LEFT 18
 #define ENC_INT_RIGHT 4
 #define ENC_INT_LEFT 5
-#define SERVO_PIN 11
-#define BATTERY_MOTOR_PIN A0
-#define BATTERY_PC_PIN A1
+#define SERVO_PIN 25
+#define BATTERY_MOTOR_PIN A10
+#define BATTERY_PC_PIN A9
 
 DualVNH5019MotorShield md;
 ros::NodeHandle  nh;
@@ -30,6 +30,8 @@ int LeftEncoderPos, RightEncoderPos;
 int Lcount,Rcount;
 int LdVal = 0, RdVal = 0;
 int leftVel, rightVel;
+float linp, angp;
+int linvel, angvel;
 int leftDir = 0, rightDir = 0;
 unsigned long rangeTime = 0, encTime = 0, batteryTime = 0;
 Servo servo1;
@@ -101,9 +103,11 @@ void navCb( const std_msgs::UInt32& data)
 
 void servoCb( const std_msgs::UInt32& data)
 {
+  float temp;
     if(data.data >= 0 && data.data <= 180)
     {
-      servo1.write(data.data);
+      temp = data.data*162.0/180 + 18;
+      servo1.write((int)temp);
     }    
 }
 
@@ -120,8 +124,8 @@ void twistCb( const geometry_msgs::Twist& vel){
   rightVel = linvel+angvel;
   leftVel = linvel-angvel;
   
-  md.setM1Speed(rightVel);
-  md.setM2Speed(-leftVel);
+  md.setM1Speed(-rightVel);
+  md.setM2Speed(leftVel);
   if(rightVel < 0)
   {
     rightDir = 1;
@@ -148,19 +152,19 @@ ros::Subscriber<std_msgs::UInt32> servosub("servo_angle", &servoCb );
 
 void setup()
 { 
-  //pinMode(PROBE_PIN, OUTPUT);
+
   md.init();
   nh.initNode();
-  //nh.subscribe(lsub);
-  //nh.subscribe(rsub);  
+  ////nh.subscribe(lsub);
+  ////nh.subscribe(rsub);  
   nh.subscribe(twistsub);  
   nh.subscribe(navsub);  
   nh.subscribe(servosub);   
   nh.advertise(pub_range);
   nh.advertise(pub_lenc);
   nh.advertise(pub_renc);  
-  nh.advertise(pub_battery_motor);
-  nh.advertise(pub_battery_pc);
+  //nh.advertise(pub_battery_motor);
+  //nh.advertise(pub_battery_pc);
   
   pinMode(ENC_RIGHT, INPUT);
   digitalWrite(ENC_RIGHT, HIGH);
@@ -170,7 +174,8 @@ void setup()
   attachInterrupt(ENC_INT_RIGHT, updateRightEncoder, RISING);
   rangeTime = millis() + 250; 
   encTime = millis() + 20; 
-  servo1.attach(SERVO_PIN); 
+  servo1.attach(SERVO_PIN);
+  servo1.write(98); 
 }
 
 void loop()
@@ -193,7 +198,7 @@ void loop()
      pub_renc.publish(&rencoder);     
      encTime = millis() + 20; //Publish every 20 ms
   }
-  
+  /*
   if(millis() < batteryTime)
   {
     batteryMotor.data = analogRead(BATTERY_MOTOR_PIN)/35.42;
@@ -202,7 +207,7 @@ void loop()
     pub_battery_pc.publish(&batteryPc);
     batteryTime = millis() + 5000; //Publish every 5s
   }
-  
+  */
   nh.spinOnce();  
 }
 
