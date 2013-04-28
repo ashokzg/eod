@@ -13,6 +13,8 @@ alias eod_nav="roslaunch eod_nav primStereo.launch"
 alias plotvel="rxplot /lwheel_vel/data /rwheel_vel/data -p 100 --ymin -2 --ymax 2"
 alias plotmotor="rxplot /lmotor_cmd/data /rmotor_cmd/data -p 100 --ymin -400 --ymax 400"
 alias plotdvel="rxplot /lwheel_vtarget/data /rwheel_vtarget/data -p 100 --ymin -2 --ymax 2"
+alias plotenc="rxplot /lwheel/data /rwheel/data -p 100"
+
 #alias plotm ="plotvel & plotmotor & plotdvel &"
 alias mvrobot="rostopic pub twist geometry_msgs/Twist \"linear: 
   x: 0.3  
