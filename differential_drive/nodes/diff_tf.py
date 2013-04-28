@@ -86,8 +86,7 @@ class DiffTf:
         self.encoder_low_wrap = rospy.get_param('wheel_low_wrap', (self.encoder_max - self.encoder_min) * 0.3 + self.encoder_min )
         self.encoder_high_wrap = rospy.get_param('wheel_high_wrap', (self.encoder_max - self.encoder_min) * 0.7 + self.encoder_min )
  
-        self.t_delta = rospy.Duration(1.0/self.rate)
-        self.t_next = rospy.Time.now() + self.t_delta
+
         
         self.lowLevelInits()
         
@@ -99,6 +98,8 @@ class DiffTf:
         self.odomBroadcaster = TransformBroadcaster()
     
     def lowLevelInits(self):
+        self.t_delta = rospy.Duration(1.0/self.rate)
+        self.t_next = rospy.Time.now() + self.t_delta
         # internal data
         self.enc_left = None        # wheel encoder readings
         self.enc_right = None
@@ -153,7 +154,8 @@ class DiffTf:
             # calculate velocities
             self.dx = d / elapsed
             self.dr = th / elapsed
-           
+            
+            print "Elapsed", elapsed, "d_left", d_left, "d_right", d_right, "th", th,
              
             if (d != 0):
                 # calculate distance traveled in x and y
@@ -162,8 +164,12 @@ class DiffTf:
                 # calculate the final position of the robot
                 self.x = self.x + ( cos( self.th ) * x - sin( self.th ) * y )
                 self.y = self.y + ( sin( self.th ) * x + cos( self.th ) * y )
+                self.x = self.x
+                self.y = self.y
             if( th != 0):
                 self.th = self.th + th
+            
+            print "x", self.x, "y", self.y, "th", self.th
                 
             # publish the odom information
             quaternion = Quaternion()
