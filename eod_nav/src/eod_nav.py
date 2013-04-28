@@ -211,14 +211,14 @@ class eodNav:
 #     self.obsStLinVel = rospy.get_param("~obs_st_lin", 0.3)
 #     self.obsRotLinVel = rospy.get_param("~obs_rot_lin", 0.3)
 #     self.obsRotAngVel = rospy.get_param("~obs_rot_ang", 0.1)
-    self.stLinVel = 0.2
-    self.rotLinVel = 0.2
-    self.rotAngVel = 0.25
+    self.stLinVel = 0.4
+    self.rotLinVel = 0.4
+    self.rotAngVel = 0.5
     self.OBS_AVOID_DIST = 250 #rospy.get_param("~obs_avoid_dist", 100)   
     self.OBS_STOP_DIST = rospy.get_param("~obs_stop_dist", 20)
-    self.obsStLinVel = 0.25
-    self.obsRotLinVel = 0.15
-    self.obsRotAngVel = 0.3    
+    self.obsStLinVel = 0.4
+    self.obsRotLinVel = 0.4
+    self.obsRotAngVel = 0.3   
     self.cameraName = rospy.get_param("/eod_cam", "camera/image_raw") 
     #Reset the parameters so that it would be easily visible to debug
     rospy.set_param("~st_lin_vel", self.stLinVel)
