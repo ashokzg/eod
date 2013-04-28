@@ -159,6 +159,7 @@ class eodNav:
     self.AREA_THRESHOLD = 0.20 #If destination is greater than 50% of the image stop.
     self.ultraCount = 0
     self.avoidState = 0
+    self.sweepDist = [600]*18
     
     
   def initCamParams(self):    
@@ -466,7 +467,9 @@ class eodNav:
     if self.autoStateChange == True:
       self.obsAvoidCount = 0
       self.avoidState = 0
+      self.sweepState = 0
     self.obsAvoidCount += 1
+    #Simply moving forward
     if self.obsAvoidCount < 10:
       print "Avoidance initializing"
       self.vel.linVelPcent = 0.3
@@ -476,8 +479,10 @@ class eodNav:
         self.desPose = copy.deepcopy(self.robotPose)
         self.desPose[2] -= numpy.pi/2
         self.avoidState = 1
+    #Rotate by 90 degrees
     elif self.avoidState == 1 and self.robotPose[2]-self.desPose[2] > 0.1:
       self.moveBase()
+    #Turn the servo
     elif self.avoidState == 1:
       self.avoidState = 2
       self.servoAngle.data = 180
@@ -485,9 +490,11 @@ class eodNav:
       self.vel.angVelPcent = 0
       self.servoPub.publish(self.servoAngle)  
       self.wait = self.obsAvoidCount + (2000/self.TIME_STEP)
+    #wait to finish turn
     elif self.avoidState == 2:
       if self.wait < self.obsAvoidCount:
         self.avoidState = 3
+    #Move until no obstacle seen
     elif self.avoidState == 3:
       if self.OBS_AVOID > 0:
         self.vel.linVelPcent = 0.3
@@ -497,21 +504,26 @@ class eodNav:
         self.vel.angVelPcent = 0
         self.avoidState = 4
         self.desPose = copy.deepcopy(self.robotPose)
-        self.desPose[2] += numpy.pi/2        
+        self.desPose[2] += numpy.pi/2
+    #turn to face the destination        
     elif self.avoidState == 4 and self.robotPose[2]-self.desPose[2] > 1:      
       self.moveBase()     
+    #Dummy state
     elif self.avoidState == 4:
       self.avoidState = 5
+    #Move forward towards destination
     elif self.avoidState == 5:
       self.vel.linVelPcent = 0.3
       self.vel.angVelPcent = 0
       if self.OBS_AVOID > 0:
         self.avoidState = 6
+    #Keep moving forward
     elif self.avoidState == 6:
       self.vel.linVelPcent = 0.3
       self.vel.angVelPcent = 0
       if self.OBS_AVOID == 0:
-        self.avoidState = 7      
+        self.avoidState = 7
+    #Turn the servo back to straight position      
     elif self.avoidState == 7:
       self.vel.linVelPcent = 0.0
       self.vel.angVelPcent = 0.0
@@ -519,13 +531,40 @@ class eodNav:
       self.servoPub.publish(self.servoAngle)
       self.wait = self.obsAvoidCount + (2000/self.TIME_STEP)
       self.avoidState = 8
+    #wait for servo to finish
     elif self.avoidState == 8:
       if self.wait < self.obsAvoidCount:
-        self.avoidState = 9                      
+        self.avoidState = 9
+        self.wait = self.obsAvoidCount + (20000/self.TIME_STEP)
+        self.vel.linVelPcent = 0
+        self.vel.angVelPcent = 0.3
+        self.setCmdVel()                 
+    elif self.avoidState == 9:
+      if self.wait < self.obsAvoidCount:
+        self.vel.linVelPcent = 0
+        self.vel.angVelPcent = 0
+        self.avoidState = 10
     else:
-      rospy.loginfo("Obstacle avoidance algo complete")
+        rospy.loginfo("Obstacle avoidance algo complete")
     self.setCmdVel()      
-  
+ 
+  def sweep(self):
+      if self.sweepState < 20:
+        if self.sweepSet == False:
+          if self.sweepState == 19:
+            #Terminal case
+            self.servoAngle.data = 90
+          else:
+            self.servoAngle.data = self.sweepState*10              
+          self.servoPub.publish(self.servoAngle)
+          self.sweepSet = True
+          self.sweepCount = 0
+        elif self.sweepCount*self.TIME_STEP > 1200:
+          self.sweepState += 1
+          self.sweepSet = False
+          if self.sweepState < 19:
+            self.sweepDist[self.sweepCount] = self.dist[1]          
+
       
   def autoObsBacktrack(self):
     print "Backtracking"
