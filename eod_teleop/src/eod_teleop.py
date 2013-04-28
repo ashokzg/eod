@@ -32,9 +32,10 @@ def joy_callback(data):
         cmd_vel.linVelPcent = (data.buttons[5] + 1)*data.axes[4]/2
         cmd_vel.angVelPcent = (data.buttons[5] + 1)*data.axes[3]/2
         twist.linear.x = (data.buttons[5] + 1)*data.axes[4]/2
-        twist.angular.z = (data.buttons[5] + 1)*data.axes[3]*5 #Velocities need to be higher
+        twist.angular.z = (data.buttons[5] + 1)*data.axes[3]#*5
+        #Angular Velocities need to be higher
     robotCmdPub.publish(cmd_vel)
-    robotTwistPub.publish(twist)
+    robotTwistPub.publish(twist) #Comment if not Testing
 
 def uiState(data):
     if data.data == 1:
