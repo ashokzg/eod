@@ -471,8 +471,29 @@ class eodNav:
       self.vel.angVelPcent = 0.0
     self.setCmdVel()
 
-  
   def autoObsAvoidance(self):
+    if self.autoStateChange == True:
+      self.servoAngle.data = 90
+      self.servoPub.publish(self.servoAngle)
+    #print "tracking in state", self.navState 
+    leftLimit, rightLimit = self.calcZone();      
+    cx = self.dest.destX + self.dest.destWidth/2
+    cy = self.dest.destY + self.dest.destHeight/2
+    #If the destination is slipping towards the left, turn left
+    if cx < leftLimit:
+      self.vel.linVelPcent = self.rotLinVel
+      self.vel.angVelPcent = self.rotAngVel
+    #If the destination is slipping towards the right, turn right
+    elif cx > rightLimit:
+      self.vel.linVelPcent = self.rotLinVel
+      self.vel.angVelPcent = -self.rotAngVel
+    #We are good to zip towards the destination
+    else:
+      self.vel.linVelPcent = self.stLinVel
+      self.vel.angVelPcent = 0.0
+    self.setCmdVel()    
+  
+  def autoObsAvoidance2(self):
     if self.autoStateChange == True:
       self.obsAvoidCount = 0
       self.avoidState = 0
@@ -666,12 +687,12 @@ class eodNav:
       self.autoDestSearchAction += 1    
     #Arbitrarily choose to go forward
     if self.autoDestSearchAction % 3 == 0:
-      self.vel.linVelPcent = 0.2
+      self.vel.linVelPcent = 0.0
       self.vel.angVelPcent = 0
     #after some time choose to turn LEFT
     elif self.autoDestSearchAction % 3 == 1:
-      self.vel.linVelPcent = 0.3
-      self.vel.angVelPcent = 0.1
+      self.vel.linVelPcent = 0.0
+      self.vel.angVelPcent = 0.45
     elif self.autoDestSearchAction % 3 == 2:
       self.vel.linVelPcent = 0.0
       self.vel.angVelPcent = 0.0
@@ -941,7 +962,7 @@ class eodNav:
       (AUTO.IDLE,                1,0,1) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
       (AUTO.IDLE,                1,1,0) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
       (AUTO.IDLE,                1,1,1) : (AUTO.ERROR               , ERR.ERR_STUPID          ),
-      (AUTO.DEST_IN_SIGHT,       0,0,0) : (AUTO.OBS_AVOIDANCE       , ERR.NONE                ),
+      (AUTO.DEST_IN_SIGHT,       0,0,0) : (AUTO.DEST_SEARCH         , ERR.NONE                ),
       (AUTO.DEST_IN_SIGHT,       0,0,1) : (AUTO.DEST_IN_SIGHT       , ERR.NONE                ),
       (AUTO.DEST_IN_SIGHT,       0,1,0) : (AUTO.OBS_AVOIDANCE       , ERR.NONE                ),
       (AUTO.DEST_IN_SIGHT,       0,1,1) : (AUTO.OBS_AVOIDANCE       , ERR.NONE                ),
@@ -949,7 +970,7 @@ class eodNav:
       (AUTO.DEST_IN_SIGHT,       1,0,1) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
       (AUTO.DEST_IN_SIGHT,       1,1,0) : (AUTO.OBS_AVOIDANCE       , ERR.ERR_DYNAMIC_OBSTACLE),
       (AUTO.DEST_IN_SIGHT,       1,1,1) : (AUTO.OBS_AVOIDANCE       , ERR.ERR_DYNAMIC_OBSTACLE),
-      (AUTO.OBS_AVOIDANCE,       0,0,0) : (AUTO.OBS_AVOIDANCE       , ERR.NONE                ),
+      (AUTO.OBS_AVOIDANCE,       0,0,0) : (AUTO.DEST_SEARCH         , ERR.NONE                ),
       (AUTO.OBS_AVOIDANCE,       0,0,1) : (AUTO.DEST_IN_SIGHT       , ERR.NONE                ),
       (AUTO.OBS_AVOIDANCE,       0,1,0) : (AUTO.OBS_AVOIDANCE       , ERR.NONE                ),
       (AUTO.OBS_AVOIDANCE,       0,1,1) : (AUTO.OBS_AVOIDANCE       , ERR.NONE                ),
@@ -957,6 +978,14 @@ class eodNav:
       (AUTO.OBS_AVOIDANCE,       1,0,1) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
       (AUTO.OBS_AVOIDANCE,       1,1,0) : (AUTO.OBS_AVOIDANCE       , ERR.NONE                ),
       (AUTO.OBS_AVOIDANCE,       1,1,1) : (AUTO.OBS_AVOIDANCE       , ERR.NONE                ),
+      (AUTO.DEST_SEARCH,         0,0,0) : (AUTO.DEST_SEARCH         , ERR.NONE                ),
+      (AUTO.DEST_SEARCH,         0,0,1) : (AUTO.DEST_IN_SIGHT       , ERR.NONE                ),
+      (AUTO.DEST_SEARCH,         0,1,0) : (AUTO.DEST_SEARCH         , ERR.NONE                ),
+      (AUTO.DEST_SEARCH,         0,1,1) : (AUTO.OBS_AVOIDANCE       , ERR.NONE                ),
+      (AUTO.DEST_SEARCH,         1,0,0) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
+      (AUTO.DEST_SEARCH,         1,0,1) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
+      (AUTO.DEST_SEARCH,         1,1,0) : (AUTO.ERROR               , ERR.ERR_UNABLE_TO_SEARCH),
+      (AUTO.DEST_SEARCH,         1,1,1) : (AUTO.ERROR               , ERR.ERR_UNABLE_TO_SEARCH),
       (AUTO.ERROR,               0,0,0) : (AUTO.ERROR               , ERR.PREVIOUS            ),
       (AUTO.ERROR,               0,0,1) : (AUTO.ERROR               , ERR.PREVIOUS            ),
       (AUTO.ERROR,               0,1,0) : (AUTO.ERROR               , ERR.PREVIOUS            ),
