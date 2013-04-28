@@ -6,6 +6,7 @@
 #include <std_msgs/Float32.h>
 #include <ultrasonic/Ultrasonic.h>
 #include <SoftwareServo.h>
+#include <geometry_msgs/Twist.h>
 
 
 #define FS 400
@@ -15,7 +16,8 @@
 #define ENC_LEFT 3
 #define ENC_RIGHT 2
 #define SERVO_PIN 11
-
+#define BATTERY_MOTOR_PIN A0
+#define BATTERY_PC_PIN A1
 
 DualVNH5019MotorShield md;
 ros::NodeHandle  nh;
@@ -24,16 +26,24 @@ std_msgs::Int16 lencoder, rencoder;
 
 int LeftEncoderPos, RightEncoderPos;
 int Lcount,Rcount;
+
+float linp;
+float angp;
+int linvel;
+int angvel;
 int LdVal = 0, RdVal = 0;
 int leftVel, rightVel;
 int leftDir = 0, rightDir = 0;
-unsigned long rangeTime = 0, encTime = 0;
+unsigned long rangeTime = 0, encTime = 0, batteryTime = 0;
 SoftwareServo servo1;
+std_msgs::Float32 batteryMotor, batteryPc;
+
 
 ros::Publisher pub_range( "/ultrasound", &us_msg);
 ros::Publisher pub_lenc( "/lwheel", &lencoder);
 ros::Publisher pub_renc( "/rwheel", &rencoder);
-
+ros::Publisher pub_battery_motor("/battery_motor_voltage", &batteryMotor);
+ros::Publisher pub_battery_pc("/battery_pc_voltage", &batteryPc);
 
 void updateRightEncoder()
 {
@@ -109,23 +119,61 @@ void servoCb( const std_msgs::UInt32& data)
     }    
 }
 
-ros::Subscriber<std_msgs::Float32> lsub("lmotor_cmd", &leftCb);  
-ros::Subscriber<std_msgs::Float32> rsub("rmotor_cmd", &rightCb);  
+
+void twistCb( const geometry_msgs::Twist& vel){
+  
+  nh.loginfo("In Call Back");
+  linp = vel.linear.x;
+  angp = vel.angular.z;
+  
+  // Velocity = k1*FS + k2*FS
+  linvel = (FS*linp); 
+  angvel = (FS*angp);
+  rightVel = linvel+angvel;
+  leftVel = linvel-angvel;
+  
+  md.setM1Speed(rightVel);
+  md.setM2Speed(-leftVel);
+  if(rightVel < 0)
+  {
+    rightDir = 1;
+  }
+  else
+  {
+    rightDir = 0;
+  }
+  if(leftVel < 0)
+  {
+    leftDir = 1; 
+  }
+  else
+  {
+    leftDir = 0;
+  }  
+}
+
+//ros::Subscriber<std_msgs::Float32> lsub("lmotor_cmd", &leftCb);  
+//ros::Subscriber<std_msgs::Float32> rsub("rmotor_cmd", &rightCb);  
+ros::Subscriber<geometry_msgs::Twist> twistsub("twist", &twistCb);  
 ros::Subscriber<std_msgs::UInt32> navsub("Nav_State", &navCb);  
 ros::Subscriber<std_msgs::UInt32> servosub("servo_angle", &servoCb );  
+
 
 void setup()
 { 
   //pinMode(PROBE_PIN, OUTPUT);
   md.init();
   nh.initNode();
-  nh.subscribe(lsub);
-  nh.subscribe(rsub);  
+  //nh.subscribe(lsub);
+  //nh.subscribe(rsub);  
+  nh.subscribe(twistsub);  
   nh.subscribe(navsub);  
   nh.subscribe(servosub);   
   nh.advertise(pub_range);
   nh.advertise(pub_lenc);
   nh.advertise(pub_renc);  
+  nh.advertise(pub_battery_motor);
+  nh.advertise(pub_battery_pc);
   
   pinMode(ENC_RIGHT, INPUT);
   digitalWrite(ENC_RIGHT, HIGH);
@@ -136,6 +184,7 @@ void setup()
   rangeTime = millis() + 250; 
   encTime = millis() + 20; 
   servoTime = millis() + 1000; 
+  batteryTime = millis() + 5000;
   done = false;  
 }
 
@@ -168,6 +217,15 @@ void loop()
   {
      servo1.detach();
      done = true;
+  }
+  
+  if(millis() < batteryTime)
+  {
+    batteryMotor.data = analogRead(BATTERY_MOTOR_PIN)/35.42;
+    batteryPc.data = analogRead(BATTERY_PC_PIN)/35.42;
+    pub_battery_motor.publish(&batteryMotor);
+    pub_battery_pc.publish(&batteryPc);
+    batteryTime = millis() + 5000; //Publish every 5s
   }
   
   nh.spinOnce();  
