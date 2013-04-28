@@ -156,12 +156,12 @@ class eodNav:
     self.OBS_STOP = 0
     self.OBS_AVOID = 0
     self.TIME_STEP = 50 #ms
-    self.AREA_THRESHOLD = 0.20 #If destination is greater than 50% of the image stop.
+    self.AREA_THRESHOLD = 0.12 #If destination is greater than 50% of the image stop.
     self.ultraCount = 0
     self.avoidState = 0
     self.sweepDist = [600]*18
-    self.sweepSet = False    
-	self.sweepState = 0
+    self.sweepSet = False
+    self.sweepState = 0
     
     
   def initCamParams(self):    
@@ -207,14 +207,14 @@ class eodNav:
 #     self.obsStLinVel = rospy.get_param("~obs_st_lin", 0.3)
 #     self.obsRotLinVel = rospy.get_param("~obs_rot_lin", 0.3)
 #     self.obsRotAngVel = rospy.get_param("~obs_rot_ang", 0.1)
-    self.stLinVel = 0.3
-    self.rotLinVel = 0.3
-    self.rotAngVel = 0.2
-    self.OBS_AVOID_DIST = 150 #rospy.get_param("~obs_avoid_dist", 100)   
+    self.stLinVel = 0.2
+    self.rotLinVel = 0.2
+    self.rotAngVel = 0.3
+    self.OBS_AVOID_DIST = 350 #rospy.get_param("~obs_avoid_dist", 100)   
     self.OBS_STOP_DIST = rospy.get_param("~obs_stop_dist", 20)
-    self.obsStLinVel = 0.3
-    self.obsRotLinVel = 0.3
-    self.obsRotAngVel = 0.1    
+    self.obsStLinVel = 0.05
+    self.obsRotLinVel = 0.05
+    self.obsRotAngVel = 0.15    
     self.cameraName = rospy.get_param("/eod_cam", "camera/image_raw") 
     #Reset the parameters so that it would be easily visible to debug
     rospy.set_param("~st_lin_vel", self.stLinVel)
@@ -473,7 +473,7 @@ class eodNav:
 
   def autoObsAvoidance(self):
     if self.autoStateChange == True:
-      self.servoAngle.data = 90
+      self.servoAngle.data = 125
       self.servoPub.publish(self.servoAngle)
     #print "tracking in state", self.navState 
     leftLimit, rightLimit = self.calcZone();      
