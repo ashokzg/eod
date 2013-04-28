@@ -196,14 +196,14 @@ class eodNav:
     
     
   def updateParameters(self):
-    self.stLinVel = rospy.get_param("~st_lin", 0.4)
-    self.rotLinVel = rospy.get_param("~rot_lin", 0.4)
+    self.stLinVel = rospy.get_param("~st_lin", 0.3)
+    self.rotLinVel = rospy.get_param("~rot_lin", 5.5)
     self.rotAngVel = rospy.get_param("~rot_ang", 0.2) 
     self.OBS_AVOID_DIST = rospy.get_param("~obs_avoid_dist", 50)   
     self.OBS_STOP_DIST = rospy.get_param("~obs_stop_dist", 20)
     self.obsStLinVel = rospy.get_param("~obs_st_lin", 0.3)
     self.obsRotLinVel = rospy.get_param("~obs_rot_lin", 0.3)
-    self.obsRotAngVel = rospy.get_param("~obs_rot_ang", 0.1)
+    self.obsRotAngVel = rospy.get_param("~obs_rot_ang", 5.5)
     self.cameraName = rospy.get_param("/eod_cam", "camera/image_raw") 
     #Reset the parameters so that it would be easily visible to debug
     rospy.set_param("~st_lin_vel", self.stLinVel)
@@ -472,7 +472,7 @@ class eodNav:
       self.moveBase()
     elif self.avoidState == 1:
       self.avoidState = 2
-      self.servoAngle.data = 0
+      self.servoAngle.data = 180
       self.vel.linVelPcent = 0
       self.vel.angVelPcent = 0
       self.servoPub.publish(self.servoAngle)  
@@ -699,9 +699,9 @@ class eodNav:
     if abs(self.desPose[2] - self.robotPose[2]) > 0.1:      
       self.vel.linVelPcent = 0.0
       if self.desPose[2] - self.robotPose[2] > 0:
-        self.vel.angVelPcent = 2.0
+        self.vel.angVelPcent = 4.0
       else:
-        self.vel.angVelPcent = -2.0              
+        self.vel.angVelPcent = -4.0              
     else:
       self.vel.linVelPcent = 0.0
       self.vel.angVelPcent = 0.0
