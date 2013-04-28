@@ -159,12 +159,13 @@ class eodNav:
     self.AREA_THRESHOLD = 0.08 #If destination is greater than 50% of the image stop.
     self.ultraCount = 0
     self.avoidState = 0
-    self.sweepDist = [600]*18
     self.sweepSet = False
     self.sweepState = 0
     self.obsAvoidStart = False
     self.desPose = [0,0,0]
     self.robotPose = [0,0,0]
+    self.totalSweepStates = 25
+    self.sweepDist = [600]*self.totalSweepStates
     
   def initCamParams(self):    
     #Initialize values
@@ -212,7 +213,7 @@ class eodNav:
     self.stLinVel = 0.2
     self.rotLinVel = 0.2
     self.rotAngVel = 0.3
-    self.OBS_AVOID_DIST = 350 #rospy.get_param("~obs_avoid_dist", 100)   
+    self.OBS_AVOID_DIST = 250 #rospy.get_param("~obs_avoid_dist", 100)   
     self.OBS_STOP_DIST = rospy.get_param("~obs_stop_dist", 20)
     self.obsStLinVel = 0.2
     self.obsRotLinVel = 0.1
@@ -482,25 +483,49 @@ class eodNav:
     if self.autoStateChange == True:
       self.servoAngle.data = 90
       self.servoPub.publish(self.servoAngle)
-    #print "tracking in state", self.navState 
-    leftLimit, rightLimit = self.calcZone();
-    leftLimit = 40
-    rightLimit = 120      
-    cx = self.dest.destX + self.dest.destWidth/2
-    cy = self.dest.destY + self.dest.destHeight/2
-    #If the destination is slipping towards the left, turn left
-    if cx < leftLimit:
-      self.vel.linVelPcent = self.obsRotLinVel
-      self.vel.angVelPcent = self.obsRotAngVel
-    #If the destination is slipping towards the right, turn right
-    elif cx > rightLimit:
-      self.vel.linVelPcent = self.obsRotLinVel
-      self.vel.angVelPcent = -self.obsRotAngVel
-    #We are good to zip towards the destination
+      self.swept = False
+    if self.swept == False:
+      self.sweep()
+      self.rightObsCount = 0
+      self.leftObsCount = 0
+      midP = (self.totalSweepStates-1)/2
+      if self.sweepState == self.totalSweepStates :
+        self.swept = True
+        for i in range(0,midP):
+          if self.sweepDist[i] < self.OBS_AVOID_DIST:
+            self.rightObsCount += 1
+          if self.sweepDist[i+midP+1] < self.OBS_AVOID_DIST:
+            self.leftObsCount += 1
+        if self.leftObsCount > self.rightObsCount:
+          self.avoidDirection = self.RIGHT
+          leftLimit = 40
+          rightLimit = 120
+        elif self.leftObsCount == self.rightObsCount:
+          if self.dest.destPresent == True:
+            cx = self.dest.destX + self.dest.destWidth/2
+            if cx < self.imgWidth/2:
+              pass
+        else:
+          self.avoidDirection = self.LEFT
+          leftLimit = self.imgWidth - 120
+          rightLimit = self.imgWidth - 40
     else:
-      self.vel.linVelPcent = self.obsStLinVel
-      self.vel.angVelPcent = 0.0
-    self.setCmdVel()    
+        #print "tracking in state", self.navState 
+        cx = self.dest.destX + self.dest.destWidth/2
+        cy = self.dest.destY + self.dest.destHeight/2
+        #If the destination is slipping towards the left, turn left
+        if cx < leftLimit:
+          self.vel.linVelPcent = self.obsRotLinVel
+          self.vel.angVelPcent = self.obsRotAngVel
+        #If the destination is slipping towards the right, turn right
+        elif cx > rightLimit:
+          self.vel.linVelPcent = self.obsRotLinVel
+          self.vel.angVelPcent = -self.obsRotAngVel
+        #We are good to zip towards the destination
+        else:
+          self.vel.linVelPcent = self.obsStLinVel
+          self.vel.angVelPcent = 0.0
+        self.setCmdVel()    
   
   def autoObsAvoidance2(self):
     if self.autoStateChange == True:
@@ -588,21 +613,22 @@ class eodNav:
     self.setCmdVel()      
  
   def sweep(self):
-      if self.sweepState < 20:
-        if self.sweepSet == False:
-          if self.sweepState == 19:
-            #Terminal case
-            self.servoAngle.data = 90
-          else:
-            self.servoAngle.data = self.sweepState*10              
-          self.servoPub.publish(self.servoAngle)
-          self.sweepSet = True
-          self.sweepCount = 0
-        elif self.sweepCount*self.TIME_STEP > 1200:
-          self.sweepState += 1
-          self.sweepSet = False
-          if self.sweepState < 19:
-            self.sweepDist[self.sweepCount] = self.dist[1]          
+    if self.sweepState <= self.totalSweepStates:
+      if self.sweepSet == False:
+        self.servoAngle.data = (self.sweepState-((self.totalSweepStates-1)/2))*5 + 90              
+        self.servoPub.publish(self.servoAngle)
+        self.sweepSet = True
+        self.sweepCount = 0
+      elif self.sweepCount*self.TIME_STEP > 500:        
+        self.sweepSet = False
+        if self.sweepState < self.totalSweepStates:
+          self.sweepDist[self.sweepState] = self.dist[1]
+        self.sweepState += 1
+        if self.sweepState == self.totalSweepStates:
+          #Terminal case
+          self.servoAngle.data = 90
+          self.servoPub.publish(self.servoAngle)         
+    self.sweepCount +=  1
 
       
   def autoObsBacktrack(self):
@@ -767,6 +793,9 @@ class eodNav:
             self.autoState = t[0]
             self.autoErrId = t[1]
           if self.autoState == AUTO.OBS_AVOIDANCE and self.obsAvoidStart == False:
+            self.vel.linVelPcent = 0
+            self.vel.angVelPcent = 0
+            self.setCmdVel()
             self.desPose = copy.deepcopy(self.robotPose)
             self.desPose[0] = self.desPose[0] + self.dist[1]/100 + 0.1
             self.obsAvoidStart = True
