@@ -162,7 +162,7 @@ class eodNav:
     self.sweepDist = [600]*18
     self.sweepSet = False
     self.sweepState = 0
-    
+    self.obsAvoidStart = 0
     
   def initCamParams(self):    
     #Initialize values
@@ -453,6 +453,7 @@ class eodNav:
     if self.autoStateChange == True:
       self.servoAngle.data = 90
       self.servoPub.publish(self.servoAngle)
+      self.obsAvoidStart = False
     #print "tracking in state", self.navState 
     leftLimit, rightLimit = self.calcZone();      
     cx = self.dest.destX + self.dest.destWidth/2
@@ -752,11 +753,11 @@ class eodNav:
         if self.applyAutoState != None:
           self.autoState = self.applyAutoState
         else:
-          if self.autoState == AUTO.OBSTACLE_AVOIDANCE and self.obsAvoidStart == False:
+          if self.autoState == AUTO.OBS_AVOIDANCE and self.obsAvoidStart == False:
             self.desPose = copy.deepcopy(self.robotPose)
             self.desPose = self.desPose[0] + self.dist[1]/100 + 0.3
             self.obsAvoidStart = True
-          if self.robotPose[0] > self.desPose[0]
+          if self.obsAvoidStart == True and self.robotPose[0] > self.desPose[0]:
             self.obsAvoidStart = False
           if self.obsAvoidStart == False:
             t = self.autoStateTrans[(self.autoState, os, oa, dl)]      
