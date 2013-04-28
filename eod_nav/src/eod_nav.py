@@ -105,9 +105,9 @@ class eodNav:
   OBS_IDX = [OBS_L, OBS_C, OBS_R]  
 
   #Used for smoothing the ultrasonic
-  val_c = numpy.zeros(5)  
-  val_r = numpy.zeros(5)  
-  val_l = numpy.zeros(5)      
+  val_c = numpy.zeros(15)  
+  val_r = numpy.zeros(15)  
+  val_l = numpy.zeros(15)      
   #===============================================================
   #
   #    INITIALIZATIONS AND PRE-NAVIGATION FUNCTIONS
@@ -160,6 +160,7 @@ class eodNav:
     self.ultraCount = 0
     self.avoidState = 0
     self.sweepDist = [600]*18
+    self.sweepSet = False
     
     
   def initCamParams(self):    
@@ -887,9 +888,9 @@ class eodNav:
     self.val_c = numpy.delete(self.val_c, 1)  
     self.val_r = numpy.delete(self.val_r, 1)  
     self.val_l = numpy.delete(self.val_l, 1)          
-    v_c = self.smooth(self.val_c, 4)
-    v_r = self.smooth(self.val_r, 4)
-    v_l = self.smooth(self.val_l, 4)            
+    v_c = self.smooth(self.val_c, 15)
+    v_r = self.smooth(self.val_r, 15)
+    v_l = self.smooth(self.val_l, 15)            
     return [v_l.mean(), v_c.mean(), v_r.mean()]
     
   def smooth(self, x, window_len=11,window='hanning'):
