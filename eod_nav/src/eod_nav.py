@@ -166,6 +166,7 @@ class eodNav:
     self.robotPose = [0,0,0]
     self.totalSweepStates = 25
     self.sweepDist = [600]*self.totalSweepStates
+    self.avoidDirection = self.LEFT
     
   def initCamParams(self):    
     #Initialize values
@@ -212,12 +213,12 @@ class eodNav:
 #     self.obsRotAngVel = rospy.get_param("~obs_rot_ang", 0.1)
     self.stLinVel = 0.2
     self.rotLinVel = 0.2
-    self.rotAngVel = 0.3
+    self.rotAngVel = 0.25
     self.OBS_AVOID_DIST = 250 #rospy.get_param("~obs_avoid_dist", 100)   
     self.OBS_STOP_DIST = rospy.get_param("~obs_stop_dist", 20)
-    self.obsStLinVel = 0.2
-    self.obsRotLinVel = 0.1
-    self.obsRotAngVel = 0.35    
+    self.obsStLinVel = 0.25
+    self.obsRotLinVel = 0.15
+    self.obsRotAngVel = 0.3    
     self.cameraName = rospy.get_param("/eod_cam", "camera/image_raw") 
     #Reset the parameters so that it would be easily visible to debug
     rospy.set_param("~st_lin_vel", self.stLinVel)
@@ -484,6 +485,8 @@ class eodNav:
       self.servoAngle.data = 90
       self.servoPub.publish(self.servoAngle)
       self.swept = False
+      self.sweepCount = 0
+      self.sweepState = 0
     if self.swept == False:
       self.sweep()
       self.rightObsCount = 0
@@ -498,34 +501,42 @@ class eodNav:
             self.leftObsCount += 1
         if self.leftObsCount > self.rightObsCount:
           self.avoidDirection = self.RIGHT
-          leftLimit = 40
-          rightLimit = 120
         elif self.leftObsCount == self.rightObsCount:
           if self.dest.destPresent == True:
             cx = self.dest.destX + self.dest.destWidth/2
             if cx < self.imgWidth/2:
-              pass
+              self.avoidDirection = self.LEFT
+            else:
+              self.avoidDirection = self.RIGHT
+          else:
+            self.avoidDirection = self.RIGHT
         else:
           self.avoidDirection = self.LEFT
-          leftLimit = self.imgWidth - 120
-          rightLimit = self.imgWidth - 40
+        if self.avoidDirection == self.LEFT:
+          self.leftLimit = self.imgWidth - 140
+          self.rightLimit = self.imgWidth - 60
+        elif self.avoidDirection == self.RIGHT:
+          self.leftLimit = 40
+          self.rightLimit = 120                    
     else:
-        #print "tracking in state", self.navState 
-        cx = self.dest.destX + self.dest.destWidth/2
-        cy = self.dest.destY + self.dest.destHeight/2
-        #If the destination is slipping towards the left, turn left
-        if cx < leftLimit:
-          self.vel.linVelPcent = self.obsRotLinVel
-          self.vel.angVelPcent = self.obsRotAngVel
-        #If the destination is slipping towards the right, turn right
-        elif cx > rightLimit:
-          self.vel.linVelPcent = self.obsRotLinVel
-          self.vel.angVelPcent = -self.obsRotAngVel
-        #We are good to zip towards the destination
-        else:
-          self.vel.linVelPcent = self.obsStLinVel
-          self.vel.angVelPcent = 0.0
-        self.setCmdVel()    
+      leftLimit = self.leftLimit
+      rightLimit = self.rightLimit
+      #print "tracking in state", self.navState 
+      cx = self.dest.destX + self.dest.destWidth/2
+      cy = self.dest.destY + self.dest.destHeight/2
+      #If the destination is slipping towards the left, turn left
+      if cx < leftLimit:
+        self.vel.linVelPcent = self.obsRotLinVel
+        self.vel.angVelPcent = self.obsRotAngVel
+      #If the destination is slipping towards the right, turn right
+      elif cx > rightLimit:
+        self.vel.linVelPcent = self.obsRotLinVel
+        self.vel.angVelPcent = -self.obsRotAngVel
+      #We are good to zip towards the destination
+      else:
+        self.vel.linVelPcent = self.obsStLinVel
+        self.vel.angVelPcent = 0.0
+      self.setCmdVel()    
   
   def autoObsAvoidance2(self):
     if self.autoStateChange == True:
@@ -619,7 +630,7 @@ class eodNav:
         self.servoPub.publish(self.servoAngle)
         self.sweepSet = True
         self.sweepCount = 0
-      elif self.sweepCount*self.TIME_STEP > 500:        
+      elif self.sweepCount*self.TIME_STEP > 200:        
         self.sweepSet = False
         if self.sweepState < self.totalSweepStates:
           self.sweepDist[self.sweepState] = self.dist[1]
@@ -727,7 +738,10 @@ class eodNav:
     #after some time choose to turn LEFT
     elif self.autoDestSearchAction % 3 == 1:
       self.vel.linVelPcent = 0.0
-      self.vel.angVelPcent = 0.45
+      if self.avoidDirection == self.RIGHT:
+        self.vel.angVelPcent = 0.45
+      else:
+        self.vel.angVelPcent = -0.45
     elif self.autoDestSearchAction % 3 == 2:
       self.vel.linVelPcent = 0.0
       self.vel.angVelPcent = 0.0
@@ -773,7 +787,8 @@ class eodNav:
     os = False
     dl = False
     if self.OBS_AVOID > 0:
-      oa = True
+      if self.destArea < 0.03:
+        oa = True
     if self.OBS_STOP > 0:
       os = True
     if self.dest.destPresent == True:
@@ -926,7 +941,11 @@ class eodNav:
     s += " A: " + str(self.avoidState) 
     s += " Obs Avoid: " + str([self.OBS_AVOID & self.OBS_L, self.OBS_AVOID & self.OBS_C, self.OBS_AVOID & self.OBS_R])
     #s += " Obs Stop: " + str([self.OBS_STOP & self.OBS_L, self.OBS_STOP & self.OBS_C, self.OBS_STOP & self.OBS_R])
-    s += " Des x " + str(self.desPose[0]) + " Cur x " + str(self.robotPose[0])
+    s += " DesX %0.3f " %self.desPose[0] + " CurX %0.3f " %self.robotPose[0]
+    try:
+      s += " Des area %0.4f" %self.destArea
+    except:
+      s += "Des area -NaN"
     if DEBUG == True:
       s += " Ultra Distance "
       s += "%0.2f " %self.dist[0]
