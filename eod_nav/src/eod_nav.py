@@ -156,13 +156,15 @@ class eodNav:
     self.OBS_STOP = 0
     self.OBS_AVOID = 0
     self.TIME_STEP = 50 #ms
-    self.AREA_THRESHOLD = 0.12 #If destination is greater than 50% of the image stop.
+    self.AREA_THRESHOLD = 0.08 #If destination is greater than 50% of the image stop.
     self.ultraCount = 0
     self.avoidState = 0
     self.sweepDist = [600]*18
     self.sweepSet = False
     self.sweepState = 0
-    self.obsAvoidStart = 0
+    self.obsAvoidStart = False
+    self.desPose = [0,0,0]
+    self.robotPose = [0,0,0]
     
   def initCamParams(self):    
     #Initialize values
@@ -212,9 +214,9 @@ class eodNav:
     self.rotAngVel = 0.3
     self.OBS_AVOID_DIST = 350 #rospy.get_param("~obs_avoid_dist", 100)   
     self.OBS_STOP_DIST = rospy.get_param("~obs_stop_dist", 20)
-    self.obsStLinVel = 0.05
-    self.obsRotLinVel = 0.05
-    self.obsRotAngVel = 0.15    
+    self.obsStLinVel = 0.2
+    self.obsRotLinVel = 0.1
+    self.obsRotAngVel = 0.35    
     self.cameraName = rospy.get_param("/eod_cam", "camera/image_raw") 
     #Reset the parameters so that it would be easily visible to debug
     rospy.set_param("~st_lin_vel", self.stLinVel)
@@ -353,7 +355,9 @@ class eodNav:
       self.vel.angVelPcent = 0
     else:
       self.vel = self.manCmdVel
-    self.setCmdVel()
+    self.twist.linear.x = self.vel.linVelPcent
+    self.twist.angular.z = self.vel.angVelPcent
+    self.robotTwistPub.publish(self.twist)
 
 
   def errorStateHandler(self):
@@ -415,6 +419,8 @@ class eodNav:
   def autoModeStateHandler(self):
     if self.navStateChange == True:
       self.autoModeInit()
+      self.obsAvoidStart = False
+      self.obsAvoidCount = 0
     if self.autoCount*self.TIME_STEP > 5*60*1000:
       raise AutoNavError(ERR.ERR_TIMEOUT, "Automode exceeded 5 minutes")    
     self.autoCount += 1
@@ -474,23 +480,25 @@ class eodNav:
 
   def autoObsAvoidance(self):
     if self.autoStateChange == True:
-      self.servoAngle.data = 125
+      self.servoAngle.data = 90
       self.servoPub.publish(self.servoAngle)
     #print "tracking in state", self.navState 
-    leftLimit, rightLimit = self.calcZone();      
+    leftLimit, rightLimit = self.calcZone();
+    leftLimit = 40
+    rightLimit = 120      
     cx = self.dest.destX + self.dest.destWidth/2
     cy = self.dest.destY + self.dest.destHeight/2
     #If the destination is slipping towards the left, turn left
     if cx < leftLimit:
-      self.vel.linVelPcent = self.rotLinVel
-      self.vel.angVelPcent = self.rotAngVel
+      self.vel.linVelPcent = self.obsRotLinVel
+      self.vel.angVelPcent = self.obsRotAngVel
     #If the destination is slipping towards the right, turn right
     elif cx > rightLimit:
-      self.vel.linVelPcent = self.rotLinVel
-      self.vel.angVelPcent = -self.rotAngVel
+      self.vel.linVelPcent = self.obsRotLinVel
+      self.vel.angVelPcent = -self.obsRotAngVel
     #We are good to zip towards the destination
     else:
-      self.vel.linVelPcent = self.stLinVel
+      self.vel.linVelPcent = self.obsStLinVel
       self.vel.angVelPcent = 0.0
     self.setCmdVel()    
   
@@ -725,6 +733,7 @@ class eodNav:
     self.errorCount = 0
     self.applyAutoState = None
     self.prevOBS_AVOID = self.OBS_AVOID
+    self.obsAvoidStart == False
     
     
   def autoCalcDestArea(self):
@@ -753,16 +762,16 @@ class eodNav:
         if self.applyAutoState != None:
           self.autoState = self.applyAutoState
         else:
-          if self.autoState == AUTO.OBS_AVOIDANCE and self.obsAvoidStart == False:
-            self.desPose = copy.deepcopy(self.robotPose)
-            self.desPose = self.desPose[0] + self.dist[1]/100 + 0.3
-            self.obsAvoidStart = True
-          if self.obsAvoidStart == True and self.robotPose[0] > self.desPose[0]:
-            self.obsAvoidStart = False
           if self.obsAvoidStart == False:
             t = self.autoStateTrans[(self.autoState, os, oa, dl)]      
             self.autoState = t[0]
             self.autoErrId = t[1]
+          if self.autoState == AUTO.OBS_AVOIDANCE and self.obsAvoidStart == False:
+            self.desPose = copy.deepcopy(self.robotPose)
+            self.desPose[0] = self.desPose[0] + self.dist[1]/100 + 0.1
+            self.obsAvoidStart = True
+          if self.obsAvoidStart == True and self.robotPose[0] > self.desPose[0]:
+            self.obsAvoidStart = False            
       if self.prevAutoState != self.autoState:
         stateChange = True
     except KeyError:
@@ -887,7 +896,8 @@ class eodNav:
     s += " Dest: " + str(self.dest.destPresent)
     s += " A: " + str(self.avoidState) 
     s += " Obs Avoid: " + str([self.OBS_AVOID & self.OBS_L, self.OBS_AVOID & self.OBS_C, self.OBS_AVOID & self.OBS_R])
-    s += " Obs Stop: " + str([self.OBS_STOP & self.OBS_L, self.OBS_STOP & self.OBS_C, self.OBS_STOP & self.OBS_R])
+    #s += " Obs Stop: " + str([self.OBS_STOP & self.OBS_L, self.OBS_STOP & self.OBS_C, self.OBS_STOP & self.OBS_R])
+    s += " Des x " + str(self.desPose[0]) + " Cur x " + str(self.robotPose[0])
     if DEBUG == True:
       s += " Ultra Distance "
       s += "%0.2f " %self.dist[0]
