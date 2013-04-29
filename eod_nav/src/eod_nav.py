@@ -103,11 +103,7 @@ class eodNav:
   OBS_C = 2
   OBS_R = 4
   OBS_IDX = [OBS_L, OBS_C, OBS_R]  
-
-  #Used for smoothing the ultrasonic
-  val_c = numpy.zeros(5)  
-  val_r = numpy.zeros(5)  
-  val_l = numpy.zeros(5)      
+  
   #===============================================================
   #
   #    INITIALIZATIONS AND PRE-NAVIGATION FUNCTIONS
@@ -161,12 +157,21 @@ class eodNav:
     self.avoidState = 0
     self.sweepSet = False
     self.sweepState = 0
+    self.contSweepSet = False
+    self.contSweepState = 0 
+    self.totalSweepStates = 25
+    self.contTotalSweepStates = 3
+    self.contSweepAngle = 20
+    self.sweepDist = [600]*self.totalSweepStates
+    self.contSweepDist = [600]*self.contTotalSweepStates           
     self.obsAvoidStart = False
     self.desPose = [0,0,0]
     self.robotPose = [0,0,0]
-    self.totalSweepStates = 25
-    self.sweepDist = [600]*self.totalSweepStates
-    self.avoidDirection = self.LEFT
+    self.UltraFilterSize = 4
+    #Used for smoothing the ultrasonic
+    self.val_c = numpy.zeros(self.UltraFilterSize)  
+    self.val_r = numpy.zeros(self.UltraFilterSize)  
+    self.val_l = numpy.zeros(self.UltraFilterSize)
     
   def initCamParams(self):    
     #Initialize values
@@ -211,14 +216,14 @@ class eodNav:
 #     self.obsStLinVel = rospy.get_param("~obs_st_lin", 0.3)
 #     self.obsRotLinVel = rospy.get_param("~obs_rot_lin", 0.3)
 #     self.obsRotAngVel = rospy.get_param("~obs_rot_ang", 0.1)
-    self.stLinVel = 0.4
-    self.rotLinVel = 0.4
-    self.rotAngVel = 0.5
+    self.stLinVel = 0.3
+    self.rotLinVel = 0.2
+    self.rotAngVel = 0.3
     self.OBS_AVOID_DIST = 250 #rospy.get_param("~obs_avoid_dist", 100)   
     self.OBS_STOP_DIST = rospy.get_param("~obs_stop_dist", 20)
-    self.obsStLinVel = 0.4
-    self.obsRotLinVel = 0.4
-    self.obsRotAngVel = 0.3   
+    self.obsStLinVel = 0.3
+    self.obsRotLinVel = 0.2
+    self.obsRotAngVel = 0.35    
     self.cameraName = rospy.get_param("/eod_cam", "camera/image_raw") 
     #Reset the parameters so that it would be easily visible to debug
     rospy.set_param("~st_lin_vel", self.stLinVel)
@@ -260,6 +265,23 @@ class eodNav:
           self.OBS_STOP |= self.OBS_IDX[i]
     self.ultraCount += 1
 
+  def contSweep(self):
+    if self.contSweepState <= self.contTotalSweepStates:
+      if self.contSweepSet == False:
+        self.servoAngle.data = (self.contSweepState-((self.contTotalSweepStates-1)/2))*self.contSweepAngle + 90              
+        self.servoPub.publish(self.servoAngle)
+        self.contSweepSet = True
+        self.contSweepCount = 0
+      elif self.contSweepCount*self.TIME_STEP > 300:        
+        self.contSweepSet = False
+        if self.contSweepState < self.contTotalSweepStates:
+          self.contSweepDist[self.contSweepState] = self.dist[1]
+        self.contSweepState += 1
+        if self.contSweepState == self.contTotalSweepStates:
+          self.contSweepState = 0
+          self.contSweepCount = 0
+          self.contSweepSet = False         
+    self.contSweepCount +=  1    
 
   def trackedDest(self, data):
     self.dest = copy.deepcopy(data)    
@@ -462,6 +484,7 @@ class eodNav:
       self.servoAngle.data = 90
       self.servoPub.publish(self.servoAngle)
       self.obsAvoidStart = False
+    self.contSweep()
     #print "tracking in state", self.navState 
     leftLimit, rightLimit = self.calcZone();      
     cx = self.dest.destX + self.dest.destWidth/2
@@ -501,6 +524,8 @@ class eodNav:
             self.leftObsCount += 1
         if self.leftObsCount > self.rightObsCount:
           self.avoidDirection = self.RIGHT
+          leftLimit = 40
+          rightLimit = 120
         elif self.leftObsCount == self.rightObsCount:
           if self.dest.destPresent == True:
             cx = self.dest.destX + self.dest.destWidth/2
@@ -630,7 +655,7 @@ class eodNav:
         self.servoPub.publish(self.servoAngle)
         self.sweepSet = True
         self.sweepCount = 0
-      elif self.sweepCount*self.TIME_STEP > 200:        
+      elif self.sweepCount*self.TIME_STEP > 500:        
         self.sweepSet = False
         if self.sweepState < self.totalSweepStates:
           self.sweepDist[self.sweepState] = self.dist[1]
@@ -983,9 +1008,9 @@ class eodNav:
     self.val_c = numpy.delete(self.val_c, 1)  
     self.val_r = numpy.delete(self.val_r, 1)  
     self.val_l = numpy.delete(self.val_l, 1)          
-    v_c = self.smooth(self.val_c, 4)
-    v_r = self.smooth(self.val_r, 4)
-    v_l = self.smooth(self.val_l, 4)            
+    v_c = self.smooth(self.val_c, self.UltraFilterSize)
+    v_r = self.smooth(self.val_r, self.UltraFilterSize)
+    v_l = self.smooth(self.val_l, self.UltraFilterSize)            
     return [v_l.mean(), v_c.mean(), v_r.mean()]
     
   def smooth(self, x, window_len=11,window='hanning'):
