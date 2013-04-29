@@ -103,11 +103,7 @@ class eodNav:
   OBS_C = 2
   OBS_R = 4
   OBS_IDX = [OBS_L, OBS_C, OBS_R]  
-
-  #Used for smoothing the ultrasonic
-  val_c = numpy.zeros(5)  
-  val_r = numpy.zeros(5)  
-  val_l = numpy.zeros(5)      
+  
   #===============================================================
   #
   #    INITIALIZATIONS AND PRE-NAVIGATION FUNCTIONS
@@ -135,7 +131,7 @@ class eodNav:
     self.vel = Velocity() 
     self.manCmdVel = Velocity()  
     self.twist = Twist()
-    self.navDebug = NavDebug()     
+    self.navDebug = NavDebug()  
     self.servoAngle = UInt32()
     self.odom = Odometry()  
     self.vel.linVelPcent = 0.0
@@ -146,7 +142,7 @@ class eodNav:
     self.pclObsCountRight = 0
     self.dest = Dest()
     self.clusters = Clusters()
-    self.dest.destPresent = False     
+    self.dest.destPresent = False
     self.Stopped = False
     self.robotResp = AUTO_OUTPUT.REACHED_DESTINATION #TODO Automode return status
     self.defineNavStateTransitionMatrix()
@@ -161,11 +157,21 @@ class eodNav:
     self.avoidState = 0
     self.sweepSet = False
     self.sweepState = 0
+    self.contSweepSet = False
+    self.contSweepState = 0 
+    self.totalSweepStates = 25
+    self.contTotalSweepStates = 3
+    self.contSweepAngle = 20
+    self.sweepDist = [600]*self.totalSweepStates
+    self.sweepDist = [600]*self.contTotalSweepStates           
     self.obsAvoidStart = False
     self.desPose = [0,0,0]
     self.robotPose = [0,0,0]
-    self.totalSweepStates = 25
-    self.sweepDist = [600]*self.totalSweepStates
+    self.UltraFilterSize = 4
+    #Used for smoothing the ultrasonic
+    val_c = numpy.zeros(self.UltraFilterSize)  
+    val_r = numpy.zeros(self.UltraFilterSize)  
+    val_l = numpy.zeros(self.UltraFilterSize)
     
   def initCamParams(self):    
     #Initialize values
@@ -259,6 +265,27 @@ class eodNav:
           self.OBS_STOP |= self.OBS_IDX[i]
     self.ultraCount += 1
 
+  def contSweep(self):
+    if self.contSweepState <= self.contTotalSweepStates:
+      if self.contSweepSet == False:
+        self.servoAngle.data = (self.contSweepState-((self.contTotalSweepStates-1)/2))*self.contSweepAngle + 90              
+        self.servoPub.publish(self.servoAngle)
+        self.contSweepSet = True
+        self.contSweepCount = 0
+      elif self.contSweepCount*self.TIME_STEP > 300:        
+        self.contSweepSet = False
+        if self.contSweepState < self.contTotalSweepStates:
+          self.contSweepDist[self.contSweepState] = self.dist[1]
+        self.contSweepState += 1
+        if self.contSweepState == self.contTotalSweepStates:
+          #Terminal case
+          self.servoAngle.data = 90
+          self.servoPub.publish(self.servoAngle)
+    else:
+      self.contSweepState = 0
+      self.contSweepCount = 0
+      self.contSweepSet = False         
+    self.contSweepCount +=  1    
 
   def trackedDest(self, data):
     self.dest = copy.deepcopy(data)    
@@ -348,7 +375,7 @@ class eodNav:
    #   self.sweepState = 0
    #   self.sweepCount = 0
    # if self.sweepState < 20:
-   #   self.sweep()
+   #   self.contSweep()
    # else:
    #   print self.sweepDist
     if self.navStateChange == True:
@@ -461,6 +488,7 @@ class eodNav:
       self.servoAngle.data = 90
       self.servoPub.publish(self.servoAngle)
       self.obsAvoidStart = False
+    self.contSweep()
     #print "tracking in state", self.navState 
     leftLimit, rightLimit = self.calcZone();      
     cx = self.dest.destX + self.dest.destWidth/2
@@ -964,9 +992,9 @@ class eodNav:
     self.val_c = numpy.delete(self.val_c, 1)  
     self.val_r = numpy.delete(self.val_r, 1)  
     self.val_l = numpy.delete(self.val_l, 1)          
-    v_c = self.smooth(self.val_c, 4)
-    v_r = self.smooth(self.val_r, 4)
-    v_l = self.smooth(self.val_l, 4)            
+    v_c = self.smooth(self.val_c, self.UltraFilterSize)
+    v_r = self.smooth(self.val_r, self.UltraFilterSize)
+    v_l = self.smooth(self.val_l, self.UltraFilterSize)            
     return [v_l.mean(), v_c.mean(), v_r.mean()]
     
   def smooth(self, x, window_len=11,window='hanning'):
