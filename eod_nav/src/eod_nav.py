@@ -168,6 +168,7 @@ class eodNav:
     self.desPose = [0,0,0]
     self.robotPose = [0,0,0]
     self.UltraFilterSize = 4
+    self.avoidDirection = self.LEFT
     #Used for smoothing the ultrasonic
     self.val_c = numpy.zeros(self.UltraFilterSize)  
     self.val_r = numpy.zeros(self.UltraFilterSize)  
@@ -217,13 +218,13 @@ class eodNav:
 #     self.obsRotLinVel = rospy.get_param("~obs_rot_lin", 0.3)
 #     self.obsRotAngVel = rospy.get_param("~obs_rot_ang", 0.1)
     self.stLinVel = 0.3
-    self.rotLinVel = 0.2
-    self.rotAngVel = 0.3
+    self.rotLinVel = 0.3
+    self.rotAngVel = 0.3    
     self.OBS_AVOID_DIST = 250 #rospy.get_param("~obs_avoid_dist", 100)   
     self.OBS_STOP_DIST = rospy.get_param("~obs_stop_dist", 20)
     self.obsStLinVel = 0.3
-    self.obsRotLinVel = 0.2
-    self.obsRotAngVel = 0.35    
+    self.obsRotLinVel = 0.3
+    self.obsRotAngVel = 0.3   
     self.cameraName = rospy.get_param("/eod_cam", "camera/image_raw") 
     #Reset the parameters so that it would be easily visible to debug
     rospy.set_param("~st_lin_vel", self.stLinVel)
@@ -538,8 +539,8 @@ class eodNav:
         else:
           self.avoidDirection = self.LEFT
         if self.avoidDirection == self.LEFT:
-          self.leftLimit = self.imgWidth - 140
-          self.rightLimit = self.imgWidth - 60
+          self.leftLimit = self.imgWidth - 160
+          self.rightLimit = self.imgWidth - 80
         elif self.avoidDirection == self.RIGHT:
           self.leftLimit = 40
           self.rightLimit = 120                    
