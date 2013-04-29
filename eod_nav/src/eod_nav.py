@@ -163,15 +163,15 @@ class eodNav:
     self.contTotalSweepStates = 3
     self.contSweepAngle = 20
     self.sweepDist = [600]*self.totalSweepStates
-    self.sweepDist = [600]*self.contTotalSweepStates           
+    self.contSweepDist = [600]*self.contTotalSweepStates           
     self.obsAvoidStart = False
     self.desPose = [0,0,0]
     self.robotPose = [0,0,0]
     self.UltraFilterSize = 4
     #Used for smoothing the ultrasonic
-    val_c = numpy.zeros(self.UltraFilterSize)  
-    val_r = numpy.zeros(self.UltraFilterSize)  
-    val_l = numpy.zeros(self.UltraFilterSize)
+    self.val_c = numpy.zeros(self.UltraFilterSize)  
+    self.val_r = numpy.zeros(self.UltraFilterSize)  
+    self.val_l = numpy.zeros(self.UltraFilterSize)
     
   def initCamParams(self):    
     #Initialize values
@@ -216,13 +216,13 @@ class eodNav:
 #     self.obsStLinVel = rospy.get_param("~obs_st_lin", 0.3)
 #     self.obsRotLinVel = rospy.get_param("~obs_rot_lin", 0.3)
 #     self.obsRotAngVel = rospy.get_param("~obs_rot_ang", 0.1)
-    self.stLinVel = 0.2
+    self.stLinVel = 0.3
     self.rotLinVel = 0.2
     self.rotAngVel = 0.3
     self.OBS_AVOID_DIST = 250 #rospy.get_param("~obs_avoid_dist", 100)   
     self.OBS_STOP_DIST = rospy.get_param("~obs_stop_dist", 20)
-    self.obsStLinVel = 0.2
-    self.obsRotLinVel = 0.1
+    self.obsStLinVel = 0.3
+    self.obsRotLinVel = 0.2
     self.obsRotAngVel = 0.35    
     self.cameraName = rospy.get_param("/eod_cam", "camera/image_raw") 
     #Reset the parameters so that it would be easily visible to debug
@@ -278,13 +278,9 @@ class eodNav:
           self.contSweepDist[self.contSweepState] = self.dist[1]
         self.contSweepState += 1
         if self.contSweepState == self.contTotalSweepStates:
-          #Terminal case
-          self.servoAngle.data = 90
-          self.servoPub.publish(self.servoAngle)
-    else:
-      self.contSweepState = 0
-      self.contSweepCount = 0
-      self.contSweepSet = False         
+          self.contSweepState = 0
+          self.contSweepCount = 0
+          self.contSweepSet = False         
     self.contSweepCount +=  1    
 
   def trackedDest(self, data):
