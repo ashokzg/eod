@@ -286,6 +286,9 @@ class eodNav:
 
   def trackedDest(self, data):
     self.dest = copy.deepcopy(data)    
+    self.destcx = self.dest.destX + self.dest.destWidth/2
+    self.destcy = self.dest.destY + self.dest.destHeight/2
+    
 
   def clusterHdl(self, data):
     print "Coming to cluster"
@@ -964,10 +967,14 @@ class eodNav:
     #print data.ultra_left, data.ultra_centre, data.ultra_right,
     s += "Nav: " + self.navStatePrintNames[self.navState] + " Auto: " + self.autoStatePrintNames[self.autoState]
     s += " Dest: " + str(self.dest.destPresent)
-    s += " A: " + str(self.avoidState) 
+    #s += " A: " + str(self.avoidState) 
     s += " Obs Avoid: " + str([self.OBS_AVOID & self.OBS_L, self.OBS_AVOID & self.OBS_C, self.OBS_AVOID & self.OBS_R])
     #s += " Obs Stop: " + str([self.OBS_STOP & self.OBS_L, self.OBS_STOP & self.OBS_C, self.OBS_STOP & self.OBS_R])
-    s += " DesX %0.3f " %self.desPose[0] + " CurX %0.3f " %self.robotPose[0]
+    #s += " DesX %0.3f " %self.desPose[0] + " CurX %0.3f " %self.robotPose[0]
+    try:
+      s += " cx " + self.destcx + " cy " + self.destcy
+    except:
+      s += " cx " + "NaN" + " cy " + "NaN"
     try:
       s += " Des area %0.4f" %self.destArea
     except:
