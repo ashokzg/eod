@@ -1,15 +1,15 @@
 <!--xml-->
 <launch>
   <!-- change this next line to include the launch file for your robot's hardware drivers: -->
-  <node pkg="rosserial_python" type="serial_node.py" name="EOD_LocalCtrl" args="/dev/ttyACM1" />
+  <node pkg="rosserial_python" type="serial_node.py" name="EOD_LocalCtrl" args="/dev/ttyACM0" respawn="True"/>
   <rosparam param="ticks_meter">218.5</rosparam>
 
-  <node pkg="differential_drive" type="pid_velocity.py" name="lpid_velocity">
+  <node pkg="differential_drive" type="pid_velocity.py" name="lpid_velocity" respawn="True">
       <remap from="wheel" to="lwheel"/>
       <remap from="motor_cmd" to="lmotor_cmd"/>
       <remap from="wheel_vtarget" to="lwheel_vtarget"/>
       <remap from="wheel_vel" to="lwheel_vel"/>
-      <rosparam param="Kp">275</rosparam>
+      <rosparam param="Kp">250</rosparam>
       <rosparam param="Ki">100</rosparam>
       <rosparam param="Kd">0</rosparam>
       <rosparam param="out_min">-400</rosparam>
@@ -18,12 +18,12 @@
       <rosparam param="timeout_ticks">40</rosparam>
       <rosparam param="rolling_pts">5</rosparam>
   </node>
-  <node pkg="differential_drive" type="pid_velocity.py" name="rpid_velocity">
+  <node pkg="differential_drive" type="pid_velocity.py" name="rpid_velocity" respawn="True">
       <remap from="wheel" to="rwheel"/>
       <remap from="motor_cmd" to="rmotor_cmd"/>
       <remap from="wheel_vtarget" to="rwheel_vtarget"/>
       <remap from="wheel_vel" to="rwheel_vel"/>
-      <rosparam param="Kp">350</rosparam>
+      <rosparam param="Kp">175</rosparam>
       <rosparam param="Ki">100</rosparam>
       <rosparam param="Kd">0</rosparam>
       <rosparam param="out_min">-400</rosparam>
@@ -34,12 +34,12 @@
   </node>
 
   <!--node pkg="differential_drive" type="virtual_joystick.py" name="virtual_joystick" output="screen"/-->
-  <node pkg="differential_drive" type="twist_to_motors.py" name="twist_to_motors" output="screen">
+  <node pkg="differential_drive" type="twist_to_motors.py" name="twist_to_motors" output="screen" respawn="True">
     <rosparam param="base_width">0.26</rosparam>
   </node>
   <param name="robot_description" textfile="$(find eod_ctrl)/urdf/eod_robot.urdf" />
   <!--node pkg="rviz" type="rviz" name="rviz" output="screen"/-->  
-  <node pkg="differential_drive" type="diff_tf.py" name="diff_tf">
+  <node pkg="differential_drive" type="diff_tf.py" name="diff_tf" respawn="True">
      <rosparam param="rate">8.0</rosparam>
      <rosparam param="base_width">0.26</rosparam>
      <param name="base_frame_id" type="string" value="base_link"/>
