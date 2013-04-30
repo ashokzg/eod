@@ -6,6 +6,7 @@
     <!--include file="$(find eod_teleop)/launch/eod_teleop.launch" /-->
     <!--node pkg="teamb_ui" type="teamb_ui" name="UI" output="screen" /-->
     <node pkg="OpenTLD" type="destinationTLD" name="OpenTLD" output="screen" />
+    <node pkg="sound_play" type="soundplay_node.py" name="Sound" output="screen"/>
     <!--node pkg="eod_nav" type="eod_nav.py" name="nav" output="screen"/-->
     <!--node pkg="rosserial_python" type="serial_node.py" name="Motor_Ctrl" args="/dev/ttyACM0" /-->
 </launch>

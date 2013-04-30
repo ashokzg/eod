@@ -50,6 +50,7 @@ public:
     };
 
     int curr_state;
+    int robot_state;
     QTimer *timer;
     QTimer *lblTimer;
 
@@ -61,7 +62,6 @@ public:
 
 public Q_SLOTS:
     void connectToROS();
-    void toggleManualMode(int);
     void updateWindow();
     void confirmTracking();
     void resetToIdleManual();
@@ -70,7 +70,11 @@ public Q_SLOTS:
     void updateNewImg(cv::Mat img);
     void updateTrkImg(cv::Mat img);
     void updateLabel();
+    void mtrBattUpdate(float);
+    void pcBattUpdate(float);
     void paintRectangle(bool,int,int,int,int);
+    void navStateReport(int);
+    void errStateReport(int);
 
   Q_SIGNALS:
     void changemode(int);
