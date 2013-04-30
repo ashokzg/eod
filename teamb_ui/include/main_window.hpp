@@ -53,6 +53,8 @@ public:
     int robot_state;
     QTimer *timer;
     QTimer *lblTimer;
+    int flag1;
+    int flag2;
 
     void closeEvent(QCloseEvent *event);
     void showNoMasterMessage();

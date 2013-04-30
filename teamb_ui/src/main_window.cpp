@@ -32,7 +32,10 @@ MainWindow::MainWindow(int argc, char** argv, QWidget *parent)
     ui.mtrBattStatus->setValue(99);
     ui.pcBattStatus->setValue(99);
 
+
     //Initialize Current State
+    flag1 = 0;
+    flag2 = 0;
     curr_state = ui_ready;
 
     QObject::connect(&qnode, SIGNAL(rosShutdown()), this, SLOT(close()));
@@ -132,28 +135,42 @@ void MainWindow::paintRectangle(bool val, int x, int y, int xw, int yw){
 }
 
 void MainWindow::mtrBattUpdate(float mtrBattVal) {
-    float val = (mtrBattVal-MOTOR_BATTERY_VOLTAGE_LOW)*100/(MOTOR_BATTERY_VOLTAGE_HIGH-MOTOR_BATTERY_VOLTAGE_LOW);
+    int val = (mtrBattVal-MOTOR_BATTERY_VOLTAGE_LOW)*100/(MOTOR_BATTERY_VOLTAGE_HIGH-MOTOR_BATTERY_VOLTAGE_LOW);
 
     ui.mtrBattStatus->setValue(val);
     if(val<20){
-    QMessageBox::warning(this, tr("Motor Battery Warning"),
+        if(flag2 ==0){
+        flag2= 1;
+            QMessageBox::warning(this, tr("Motor Battery Warning"),
                                    tr("The Motor Battery Supply is below it's threshold.\n"
                                       "Please change the battery and charge it!"),
                                    QMessageBox::Ok);
 
+        }
     }
+    if(val>20){
+        flag2 = 0;
+    }
+
 }
 
 void MainWindow::pcBattUpdate(float pcBattVal) {
-    float val = (pcBattVal-PC_BATTERY_VOLTAGE_LOW)*100/(PC_BATTERY_VOLTAGE_HIGH-PC_BATTERY_VOLTAGE_LOW);
+    int val = (pcBattVal-PC_BATTERY_VOLTAGE_LOW)*100/(PC_BATTERY_VOLTAGE_HIGH-PC_BATTERY_VOLTAGE_LOW);
     ui.pcBattStatus->setValue(val);
 
     if(val<25){
-    QMessageBox::warning(this, tr("PC Battery Warning"),
+        if(flag1==0){
+            flag1 = 1;
+        QMessageBox::warning(this, tr("PC Battery Warning"),
                                    tr("The PC Battery Supply is below it's threshold.\n"
                                       "Please change the battery and charge it!"),
                                    QMessageBox::Ok);
+        }
     }
+    if(val>25){
+        flag1 = 0;
+    }
+
 }
 
 void MainWindow::navStateReport(int state) {
@@ -197,37 +214,37 @@ void MainWindow::errStateReport(int state) {
         commandToShell("rosrun sound_play say.py \"DYNAMIC OBSTACLE\"&");
         commandToShell("rosrun sound_play say.py \"DYNAMIC OBSTACLE\"&");
         commandToShell("rosrun sound_play say.py \"DYNAMIC OBSTACLE\"&");
-        qDebug()<<"DYNAMIC OBS";
+        //qDebug()<<"DYNAMIC OBS";
         break;
     case 3:
         commandToShell("rosrun sound_play say.py \"UNABLE TO AVOID AFTER TRYING! PLEASE MANUALLY CONTROL\"&");
         commandToShell("rosrun sound_play say.py \"UNABLE TO AVOID AFTER TRYING! PLEASE MANUALLY CONTROL\"&");
         commandToShell("rosrun sound_play say.py \"UNABLE TO AVOID AFTER TRYING! PLEASE MANUALLY CONTROL\"&");
-        qDebug()<<"UNABLE TO AVOID";
+        //qDebug()<<"UNABLE TO AVOID";
         break;
     case 4:
         commandToShell("rosrun sound_play say.py \"UNABLE TO LOCATE DESTINATION AFTER SEARCH\"&");
         commandToShell("rosrun sound_play say.py \"UNABLE TO LOCATE DESTINATION AFTER SEARCH\"&");
         commandToShell("rosrun sound_play say.py \"UNABLE TO LOCATE DESTINATION AFTER SEARCH\"&");
-        qDebug()<<"UNABLE TO LOCATE DESTINATION";
+        //qDebug()<<"UNABLE TO LOCATE DESTINATION";
         break;
     case 5:
         commandToShell("rosrun sound_play say.py \"TIME OUT OCCURRED. PLEASE MANUALLY CONTROL THE ROBOT\"&");
         commandToShell("rosrun sound_play say.py \"TIME OUT OCCURRED. PLEASE MANUALLY CONTROL THE ROBOT\"&");
         commandToShell("rosrun sound_play say.py \"TIME OUT OCCURRED. PLEASE MANUALLY CONTROL THE ROBOT\"&");
-        qDebug()<<"TIME-OUT OCCURRED";
+        //qDebug()<<"TIME-OUT OCCURRED";
         break;
     case 6:
         commandToShell("rosrun sound_play say.py \" DESTINATION IS UNKNOWN. PLEASE LOCATE DESTINATION.\"&");
         commandToShell("rosrun sound_play say.py \" DESTINATION IS UNKNOWN. PLEASE LOCATE DESTINATION.\"&");
         commandToShell("rosrun sound_play say.py \" DESTINATION IS UNKNOWN. PLEASE LOCATE DESTINATION.\"&");
-        qDebug()<<"DEST UNKNOWN";
+        //qDebug()<<"DEST UNKNOWN";
         break;
     case 7:
         commandToShell("rosrun sound_play say.py \"ROBOT IS LOST. PLEASE MANUALLY CONTROL AND RELOCATE DESTINATION.\"&");
         commandToShell("rosrun sound_play say.py \"ROBOT IS LOST. PLEASE MANUALLY CONTROL AND RELOCATE DESTINATION.\"&");
         commandToShell("rosrun sound_play say.py \"ROBOT IS LOST. PLEASE MANUALLY CONTROL AND RELOCATE DESTINATION.\"&");
-        qDebug()<<"ROBOT LOST";
+        //qDebug()<<"ROBOT LOST";
         break;
     }
 }

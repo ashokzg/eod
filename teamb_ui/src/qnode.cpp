@@ -1,6 +1,7 @@
 #include "../include/qnode.hpp"
 #include "eodimg.hpp"
 #include <iostream>
+#include <math.h>
 
 namespace teamb_ui {
 
@@ -103,15 +104,16 @@ void QNode::dispCoord(const Dest ImgAreaRecvd){
 void QNode::mtrBattInput(const std_msgs::Float32 battStateRecvd) {
     float battState;
     battState = battStateRecvd.data;
-    qDebug()<<"Battery State Received"<<battState;
-    Q_EMIT mtrBattInfo(battState);
+
+    //qDebug()<<"Battery State Received"<<battState;
+    Q_EMIT mtrBattInfo(floor(battState));
 }
 
 void QNode::pcBattInput(const std_msgs::Float32 battStateRecvd) {
     float battState;
     battState = battStateRecvd.data;
-    qDebug()<<"Battery State Received"<<battState;
-    Q_EMIT pcBattInfo(battState);
+    //qDebug()<<"Battery State Received"<<battState;
+    Q_EMIT pcBattInfo(floor(battState));
 }
 
 void QNode::log( const LogLevel &level, const std::string &msg) {
