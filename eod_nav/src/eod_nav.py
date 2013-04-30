@@ -30,7 +30,7 @@ AUTO = enum(
   OBS_AVOIDANCE     = 2,   #We have sighted an obstacle at 3m distance and want to avoid it
   OBS_BACKTRACK     = 3,   #We have lost the destination when we tried to avoid, we are gonna backtrack
   OBS_RE_AVOIDANCE  = 4,   #we have backtracked and we will try to avoid it again now
-  OBS_CUTTING_CORNER= 5,   #The robot just close to avoiding an obstacle, and tries to cut corner now
+  SLOPE             = 5,   #Used for slope. Wrongly named because of laziness
   DEST_SEARCH       = 6,   #We have lost the destination, go into destination search mode
   DEST_REACHED      = 7,   #The destination has been reached
   ERROR             = 8)   #Error state, with error code in comments  
@@ -104,6 +104,10 @@ class eodNav:
   OBS_R = 4
   OBS_IDX = [OBS_L, OBS_C, OBS_R]  
   
+  GROUNDLEVEL = 0
+  UPSLOPE = 2
+  DOWNSLOPE = 1
+  
   #===============================================================
   #
   #    INITIALIZATIONS AND PRE-NAVIGATION FUNCTIONS
@@ -169,6 +173,7 @@ class eodNav:
     self.robotPose = [0,0,0]
     self.UltraFilterSize = 4
     self.avoidDirection = self.LEFT
+    self.slope = self.GROUNDLEVEL
     #Used for smoothing the ultrasonic
     self.val_c = numpy.zeros(self.UltraFilterSize)  
     self.val_r = numpy.zeros(self.UltraFilterSize)  
@@ -288,6 +293,13 @@ class eodNav:
     self.dest = copy.deepcopy(data)    
     self.destcx = self.dest.destX + self.dest.destWidth/2
     self.destcy = self.dest.destY + self.dest.destHeight/2
+    if self.dest.destPresent == True:
+      if self.destcy > 200 and self.destcy < 300:
+        self.slope = self.GROUNDLEVEL
+      elif self.destcy < 200:
+        self.slope = self.DOWNSLOPE
+      elif self.destcy > 300:
+        self.slope = self.UPSLOPE   
     
 
   def clusterHdl(self, data):
@@ -469,8 +481,8 @@ class eodNav:
     elif self.autoState == AUTO.OBS_RE_AVOIDANCE:
       self.autoObsReAvoidance()
       pass
-    elif self.autoState == AUTO.OBS_CUTTING_CORNER:
-      self.autoObsCuttingCorner()
+    elif self.autoState == AUTO.SLOPE:
+      self.autoSlope()
       pass
     elif self.autoState == AUTO.DEST_SEARCH:
       self.autoDestSearch()
@@ -719,33 +731,55 @@ class eodNav:
     self.setCmdVel()
   
   
-  def autoObsCuttingCorner(self):
+  def autoSlope(self):
     if self.autoStateChange == True:
-      self.cuttingCornerTime = 0
-    if self.cuttingCornerTime*self.TIME_STEP >= 20000:
-      raise AutoNavError(ERR.ERR_TIMEOUT, "Cutting corner timeout")
-    self.cuttingCornerTime += 1
+      self.slopeTime = 0
+      self.blindTime = 0
+    if self.slopeTime*self.TIME_STEP >= 100000:
+      raise AutoNavError(ERR.ERR_TIMEOUT, "slope timeout")
+    self.slopeTime += 1
     if self.dist[1] > 0.2:
-      #calczone defines where we maintain our destination
-      leftLimit, rightLimit = self.calcZone()      
-      cx = self.dest.destX + self.dest.destWidth/2
-      cy = self.dest.destY + self.dest.destHeight/2
-      #If the destination is slipping towards the left, turn left
-      if cx < leftLimit:
-        self.vel.linVelPcent = self.obsRotLinVel
-        self.vel.angVelPcent = self.obsRotAngVel*1.5
-      #If the destination is slipping towards the right, turn right
-      elif cx > rightLimit:
-        self.vel.linVelPcent = self.obsRotLinVel
-        self.vel.angVelPcent = -self.obsRotAngVel*1.5
-      #We are good to zip towards the destination
-      else:
-        self.vel.linVelPcent = self.obsStLinVel
-        self.vel.angVelPcent = 0.0
+      if self.dest.destPresent == True:
+        #calczone defines where we maintain our destination
+        leftLimit, rightLimit = self.calcZone()      
+        cx = self.dest.destX + self.dest.destWidth/2
+        cy = self.dest.destY + self.dest.destHeight/2
+        #If the destination is slipping towards the left, turn left
+        if cx < leftLimit:
+          self.vel.linVelPcent = self.obsRotLinVel
+          self.vel.angVelPcent = self.obsRotAngVel
+        #If the destination is slipping towards the right, turn right
+        elif cx > rightLimit:
+          self.vel.linVelPcent = self.obsRotLinVel
+          self.vel.angVelPcent = -self.obsRotAngVel
+        #We are good to zip towards the destination
+        else:
+          self.vel.linVelPcent = self.obsStLinVel
+          self.vel.angVelPcent = 0.0
+      else:        
+        if self.blindTime*self.TIME_STEP < 10000:
+          self.vel.linVelPcent = self.obsStLinVel
+          self.vel.angVelPcent = 0.0          
+        elif self.blindTime*self.TIME_STEP < 12000:
+          if self.blindTime*self.TIME_STEP == 10000:
+            self.desPose[2] = self.odom.pose.pose.orientation.z
+          self.vel.linVelPcent = 0
+          self.vel.linVelPcent = self.obsRotAngVel
+        elif self.blindTime*self.TIME_STEP < 14000:
+          self.vel.linVelPcent = 0
+          self.vel.linVelPcent = -self.obsRotAngVel
+        elif self.blindTime < 18000:
+          self.moveBase()
+        else:
+          self.blindTime = 0
+        self.blindTime += 1
     else:
+      #Obstacle in slope case
       self.vel.linVelPcent = 0.0
       self.vel.angVelPcent = 0.0
-    self.setCmdVel()      
+    self.setCmdVel()  
+    if self.slope == self.GROUNDLEVEL:
+      self.autoState = AUTO.DEST_IN_SIGHT    
     pass
   
   
@@ -833,9 +867,14 @@ class eodNav:
           self.autoState = self.applyAutoState
         else:
           if self.obsAvoidStart == False:
-            t = self.autoStateTrans[(self.autoState, os, oa, dl)]      
-            self.autoState = t[0]
-            self.autoErrId = t[1]
+            if self.slope == self.GROUNDLEVEL:
+              if self.autoState == AUTO.SLOPE:
+                self.autoState = AUTO.DEST_IN_SIGHT
+              t = self.autoStateTrans[(self.autoState, os, oa, dl)]
+              self.autoState = t[0]
+              self.autoErrId = t[1]
+            else:
+              self.autoState = AUTO.SLOPE        #Slope state          
           if self.autoState == AUTO.OBS_AVOIDANCE and self.obsAvoidStart == False:
             self.vel.linVelPcent = 0
             self.vel.angVelPcent = 0
@@ -866,9 +905,9 @@ class eodNav:
     if abs(self.desPose[2] - self.robotPose[2]) > 0.1:      
       self.vel.linVelPcent = 0.0
       if self.desPose[2] - self.robotPose[2] > 0:
-        self.vel.angVelPcent = 0.4
+        self.vel.angVelPcent = self.obsRotAngVel
       else:
-        self.vel.angVelPcent = -0.40              
+        self.vel.angVelPcent = -self.obsRotAngVel              
     else:
       self.vel.linVelPcent = 0.0
       self.vel.angVelPcent = 0.0
@@ -972,19 +1011,20 @@ class eodNav:
     #s += " Obs Stop: " + str([self.OBS_STOP & self.OBS_L, self.OBS_STOP & self.OBS_C, self.OBS_STOP & self.OBS_R])
     #s += " DesX %0.3f " %self.desPose[0] + " CurX %0.3f " %self.robotPose[0]
     try:
-      s += " cx " + self.destcx + " cy " + self.destcy
+      s += " cx " + str(self.destcx) + " cy " + str(self.destcy)
     except:
       s += " cx " + "NaN" + " cy " + "NaN"
     try:
       s += " Des area %0.4f" %self.destArea
     except:
-      s += "Des area -NaN"
+      s += " Des area -NaN"
     if DEBUG == True:
-      s += " Ultra Distance "
-      s += "%0.2f " %self.dist[0]
+      s += " Ultra "
+      #s += "%0.2f " %self.dist[0]
       s += "%0.2f " %self.dist[1]
-      s += "%0.2f " %self.dist[2]
-      s += str(self.vel.linVelPcent) + " " + str(self.vel.angVelPcent)
+      #s += "%0.2f " %self.dist[2]
+      s += " Vel: " + str(self.vel.linVelPcent) + " " + str(self.vel.angVelPcent)
+      s += " Slope: " + str(self.slope)
       #print s
       rospy.loginfo(s)
       self.navDebug.autoState = self.autoStatePrintNames[self.autoState]
@@ -1137,15 +1177,15 @@ class eodNav:
       (AUTO.OBS_RE_AVOIDANCE,    1,0,0) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
       (AUTO.OBS_RE_AVOIDANCE,    1,0,1) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
       (AUTO.OBS_RE_AVOIDANCE,    1,1,0) : (AUTO.ERROR               , ERR.ERR_UNABLE_TO_AVOID ),
-      (AUTO.OBS_RE_AVOIDANCE,    1,1,1) : (AUTO.OBS_CUTTING_CORNER  , ERR.NONE                ),
-      (AUTO.OBS_CUTTING_CORNER,  0,0,0) : (AUTO.OBS_CUTTING_CORNER  , ERR.NONE                ),
-      (AUTO.OBS_CUTTING_CORNER,  0,0,1) : (AUTO.DEST_IN_SIGHT       , ERR.NONE                ),
-      (AUTO.OBS_CUTTING_CORNER,  0,1,0) : (AUTO.OBS_CUTTING_CORNER  , ERR.NONE                ),
-      (AUTO.OBS_CUTTING_CORNER,  0,1,1) : (AUTO.OBS_AVOIDANCE       , ERR.NONE                ),
-      (AUTO.OBS_CUTTING_CORNER,  1,0,0) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
-      (AUTO.OBS_CUTTING_CORNER,  1,0,1) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
-      (AUTO.OBS_CUTTING_CORNER,  1,1,0) : (AUTO.OBS_CUTTING_CORNER  , ERR.NONE                ),
-      (AUTO.OBS_CUTTING_CORNER,  1,1,1) : (AUTO.OBS_CUTTING_CORNER  , ERR.NONE                ),
+      (AUTO.OBS_RE_AVOIDANCE,    1,1,1) : (AUTO.SLOPE  , ERR.NONE                ),
+      (AUTO.SLOPE,  0,0,0) : (AUTO.SLOPE  , ERR.NONE                ),
+      (AUTO.SLOPE,  0,0,1) : (AUTO.DEST_IN_SIGHT       , ERR.NONE                ),
+      (AUTO.SLOPE,  0,1,0) : (AUTO.SLOPE  , ERR.NONE                ),
+      (AUTO.SLOPE,  0,1,1) : (AUTO.OBS_AVOIDANCE       , ERR.NONE                ),
+      (AUTO.SLOPE,  1,0,0) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
+      (AUTO.SLOPE,  1,0,1) : (AUTO.ERROR               , ERR.ERR_ILLEGAL         ),
+      (AUTO.SLOPE,  1,1,0) : (AUTO.SLOPE  , ERR.NONE                ),
+      (AUTO.SLOPE,  1,1,1) : (AUTO.SLOPE  , ERR.NONE                ),
       (AUTO.DEST_SEARCH,         0,0,0) : (AUTO.DEST_SEARCH         , ERR.NONE                ),
       (AUTO.DEST_SEARCH,         0,0,1) : (AUTO.DEST_IN_SIGHT       , ERR.NONE                ),
       (AUTO.DEST_SEARCH,         0,1,0) : (AUTO.DEST_SEARCH         , ERR.NONE                ),
@@ -1221,7 +1261,7 @@ class eodNav:
       "OBS_AVOIDANCE"     ,   #We have sighted an obstacle at 3m distance and want to avoid it
       "OBS_BACKTRACK"     ,   #We have lost the destination when we tried to avoid, we are gonna backtrack
       "OBS_RE_AVOIDANCE"  ,   #we have backtracked and we will try to avoid it again now
-      "OBS_CUTTING_CORNER",   #The robot just close to avoiding an obstacle, and tries to cut corner now
+      "SLOPE",   #The robot just close to avoiding an obstacle, and tries to cut corner now
       "DEST_SEARCH"       ,   #We have lost the destination, go into destination search mode
       "DEST_REACHED"      ,   #The destination has been reached
       "ERROR"]
