@@ -144,8 +144,8 @@ void twistCb( const geometry_msgs::Twist& vel){
   }  
 }
 
-//ros::Subscriber<std_msgs::Float32> lsub("lmotor_cmd", &leftCb);  
-//ros::Subscriber<std_msgs::Float32> rsub("rmotor_cmd", &rightCb);  
+ros::Subscriber<std_msgs::Float32> lsub("lmotor_cmd", &leftCb);  
+ros::Subscriber<std_msgs::Float32> rsub("rmotor_cmd", &rightCb);  
 ros::Subscriber<geometry_msgs::Twist> twistsub("twist", &twistCb);  
 ros::Subscriber<std_msgs::UInt32> navsub("Nav_State", &navCb);  
 ros::Subscriber<std_msgs::UInt32> servosub("servo_angle", &servoCb );  
@@ -155,15 +155,15 @@ void setup()
 
   md.init();
   nh.initNode();
-  ////nh.subscribe(lsub);
-  ////nh.subscribe(rsub);  
-  nh.subscribe(twistsub);  
+  nh.subscribe(lsub);
+  nh.subscribe(rsub);  
+  //nh.subscribe(twistsub);  
   nh.subscribe(navsub);  
   nh.subscribe(servosub);   
   nh.advertise(pub_range);
   nh.advertise(pub_lenc);
   nh.advertise(pub_renc);  
-  //nh.advertise(pub_battery_motor);
+  nh.advertise(pub_battery_motor);
   //nh.advertise(pub_battery_pc);
   
   pinMode(ENC_RIGHT, INPUT);
@@ -198,7 +198,7 @@ void loop()
      pub_renc.publish(&rencoder);     
      encTime = millis() + 20; //Publish every 20 ms
   }
-  /*
+  
   if(millis() < batteryTime)
   {
     batteryMotor.data = analogRead(BATTERY_MOTOR_PIN)/35.42;
@@ -207,7 +207,6 @@ void loop()
     pub_battery_pc.publish(&batteryPc);
     batteryTime = millis() + 5000; //Publish every 5s
   }
-  */
   nh.spinOnce();  
 }
 
