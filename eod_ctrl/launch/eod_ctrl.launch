@@ -1,7 +1,7 @@
 <!--xml-->
 <launch>
   <!-- change this next line to include the launch file for your robot's hardware drivers: -->
-  <node pkg="rosserial_python" type="serial_node.py" name="EOD_LocalCtrl" args="/dev/ttyACM0" />
+  <node pkg="rosserial_python" type="serial_node.py" name="EOD_LocalCtrl" args="/dev/ttyACM1" />
   <rosparam param="ticks_meter">218.5</rosparam>
 
   <node pkg="differential_drive" type="pid_velocity.py" name="lpid_velocity">
@@ -10,7 +10,7 @@
       <remap from="wheel_vtarget" to="lwheel_vtarget"/>
       <remap from="wheel_vel" to="lwheel_vel"/>
       <rosparam param="Kp">200</rosparam>
-      <rosparam param="Ki">50</rosparam>
+      <rosparam param="Ki">200</rosparam>
       <rosparam param="Kd">0</rosparam>
       <rosparam param="out_min">-400</rosparam>
       <rosparam param="out_max">400</rosparam>
@@ -24,7 +24,7 @@
       <remap from="wheel_vtarget" to="rwheel_vtarget"/>
       <remap from="wheel_vel" to="rwheel_vel"/>
       <rosparam param="Kp">200</rosparam>
-      <rosparam param="Ki">50</rosparam>
+      <rosparam param="Ki">200</rosparam>
       <rosparam param="Kd">0</rosparam>
       <rosparam param="out_min">-400</rosparam>
       <rosparam param="out_max">400</rosparam>  

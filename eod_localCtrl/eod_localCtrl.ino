@@ -75,7 +75,7 @@ void updateLeftEncoder()
 void leftCb( const std_msgs::Float32& data)
 {
   leftVel = (int)data.data;
-  md.setM1Speed(leftVel);   
+  md.setM1Speed(-leftVel);   
   if(leftVel < 0)
     leftDir = 1; 
   else
@@ -85,7 +85,7 @@ void leftCb( const std_msgs::Float32& data)
 void rightCb( const std_msgs::Float32& data)
 {
   rightVel = (int)data.data;
-  md.setM2Speed(-rightVel); 
+  md.setM2Speed(rightVel); 
   if(rightVel < 0)
     rightDir = 1; 
   else
