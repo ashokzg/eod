@@ -2,4 +2,5 @@
 <launch>
   <node pkg="teamb_ui" type="teamb_ui" name="teamb_ui" output="screen"/>
   <include file="$(find eod_teleop)/launch/eod_teleop.launch"/>
+  <node pkg="sound_play" type="soundplay_node.py" name="Sound" output="screen"/>
 </launch>
