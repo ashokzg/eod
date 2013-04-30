@@ -21,6 +21,7 @@ alias plotenc="rxplot /lwheel/data /rwheel/data -p 100"
 alias plotultra="rxplot ultrasound/ultra_centre --ymax 700 --ymin 0"
 
 alias eodctrl="roslaunch eod_ctrl eod_ctrl_open.launch"
+alias eodctrlpid="roslaunch eod_ctrl eod_ctrl.launch"
 alias eodnavl="roslaunch eod_nav prim.launch"
 alias eodnav="rosrun eod_nav eod_nav.py"
 alias eodui="roslaunch teamb_ui teamb_ui.launch"

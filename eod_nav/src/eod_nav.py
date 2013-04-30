@@ -157,7 +157,7 @@ class eodNav:
     self.OBS_STOP = 0
     self.OBS_AVOID = 0
     self.TIME_STEP = 50 #ms
-    self.AREA_THRESHOLD = 0.08 #If destination is greater than 50% of the image stop.
+    self.AREA_THRESHOLD = 0.25 #If destination is greater than 50% of the image stop.
     self.ultraCount = 0
     self.avoidState = 0
     self.sweepSet = False
@@ -172,7 +172,7 @@ class eodNav:
     self.obsAvoidStart = False
     self.desPose = [0,0,0]
     self.robotPose = [0,0,0]
-    self.UltraFilterSize = 4
+    self.UltraFilterSize = 8
     self.avoidDirection = self.LEFT
     self.slope = self.GROUNDLEVEL
     #Used for smoothing the ultrasonic
@@ -225,12 +225,12 @@ class eodNav:
 #     self.obsRotAngVel = rospy.get_param("~obs_rot_ang", 0.1)
     self.stLinVel = 0.3
     self.rotLinVel = 0.3
-    self.rotAngVel = 0.3    
+    self.rotAngVel = 2.0    
     self.OBS_AVOID_DIST = 250 #rospy.get_param("~obs_avoid_dist", 100)   
     self.OBS_STOP_DIST = rospy.get_param("~obs_stop_dist", 20)
     self.obsStLinVel = 0.3
     self.obsRotLinVel = 0.3
-    self.obsRotAngVel = 0.3   
+    self.obsRotAngVel = 2.0   
     self.cameraName = rospy.get_param("/eod_cam", "camera/image_raw") 
     #Reset the parameters so that it would be easily visible to debug
     rospy.set_param("~st_lin_vel", self.stLinVel)
@@ -295,11 +295,11 @@ class eodNav:
     self.destcx = self.dest.destX + self.dest.destWidth/2
     self.destcy = self.dest.destY + self.dest.destHeight/2
     if self.dest.destPresent == True:
-      if self.destcy > 200 and self.destcy < 300:
+      if self.destcy > 180 and self.destcy < 300:
         self.slope = self.GROUNDLEVEL
-      elif self.destcy < 200:
+      elif self.destcy < 180:
         self.slope = self.DOWNSLOPE
-      elif self.destcy > 300:
+      elif self.destcy > 280:
         self.slope = self.UPSLOPE   
     
 
@@ -399,7 +399,7 @@ class eodNav:
     else:
       self.vel = self.manCmdVel
     self.twist.linear.x = self.vel.linVelPcent
-    self.twist.angular.z = self.vel.angVelPcent
+    self.twist.angular.z = self.vel.angVelPcent*5
     self.robotTwistPub.publish(self.twist)
 
 
@@ -529,6 +529,9 @@ class eodNav:
       self.swept = False
       self.sweepCount = 0
       self.sweepState = 0
+      self.obsAvoidCount = 0
+    if self.obsAvoidCount*self.TIME_STEP >= 40000:
+      raise AutoNavError(ERR.ERR_TIMEOUT, "Obstacle Avoidance timeout")
     if self.swept == False:
       self.sweep()
       self.rightObsCount = 0
@@ -561,8 +564,10 @@ class eodNav:
           self.rightLimit = self.imgWidth - 80
         elif self.avoidDirection == self.RIGHT:
           self.leftLimit = 40
-          self.rightLimit = 120                    
+          self.rightLimit = 120       
+        self.desPose[0] = self.robotPose[0] + min(self.sweepDist)/100 + 0.1             
     else:
+      self.obsAvoidCount += 1
       leftLimit = self.leftLimit
       rightLimit = self.rightLimit
       #print "tracking in state", self.navState 
@@ -699,9 +704,9 @@ class eodNav:
     else:  
       mult = 1
     if self.backTrackCount % 120 < 40:
-      self.vel.angVelPcent = 0.35*mult
+      self.vel.angVelPcent = 3*mult
     elif self.backTrackCount %120 < 80:
-      self.vel.angVelPcent = -0.35*mult
+      self.vel.angVelPcent = -3*mult
     else:
       self.vel.angVelPcent = 0.0
     self.backTrackCount += 1 #Time increment every TIME_STEP    
@@ -738,15 +743,18 @@ class eodNav:
     if self.autoStateChange == True:
       self.slopeTime = 0
       self.blindTime = 0
-    if self.slopeTime*self.TIME_STEP >= 100000:
-      raise AutoNavError(ERR.ERR_TIMEOUT, "slope timeout")
+    if self.slopeTime*self.TIME_STEP >= 15000:
+      #raise AutoNavError(ERR.ERR_TIMEOUT, "slope timeout")
+      self.autoState = AUTO.DEST_IN_SIGHT
     self.slopeTime += 1
-    if self.dist[1] > 0.2:
-      if self.dest.destPresent == True:
+    if self.dist[1] > 0.2:      
+      if self.dest.destPresent == True:	
         #calczone defines where we maintain our destination
-        leftLimit, rightLimit = self.calcZone()      
+        leftLimit = self.imgWidth/2 - 50
+        rightLimit = self.imgWidth/2 + 50      
         cx = self.dest.destX + self.dest.destWidth/2
         cy = self.dest.destY + self.dest.destHeight/2
+	      #print leftLimit, cx, rightLimit
         #If the destination is slipping towards the left, turn left
         if cx < leftLimit:
           self.vel.linVelPcent = self.obsRotLinVel
@@ -760,7 +768,8 @@ class eodNav:
           self.vel.linVelPcent = self.obsStLinVel
           self.vel.angVelPcent = 0.0
       else:        
-        if self.blindTime*self.TIME_STEP < 10000:
+        print "No destination, going blind"
+	if self.blindTime*self.TIME_STEP < 10000:
           self.vel.linVelPcent = self.obsStLinVel
           self.vel.angVelPcent = 0.0          
         elif self.blindTime*self.TIME_STEP < 12000:
@@ -795,7 +804,7 @@ class eodNav:
       raise AutoNavError(ERR.ERR_TIMEOUT, "Destination search timeout")
     self.destSearchTime += 1 #Time increment every TIME_STEP
     #Change actions every 1 second
-    if self.destSearchTime*self.TIME_STEP % 1000 == 0:
+    if self.destSearchTime*self.TIME_STEP % 3000 == 0:
       self.autoDestSearchAction += 1    
     #Arbitrarily choose to go forward
     if self.autoDestSearchAction % 3 == 0:
@@ -804,10 +813,11 @@ class eodNav:
     #after some time choose to turn LEFT
     elif self.autoDestSearchAction % 3 == 1:
       self.vel.linVelPcent = 0.0
+      print "Searching"
       if self.avoidDirection == self.RIGHT:
-        self.vel.angVelPcent = 0.45
+        self.vel.angVelPcent = 3
       else:
-        self.vel.angVelPcent = -0.45
+        self.vel.angVelPcent = -3
     elif self.autoDestSearchAction % 3 == 2:
       self.vel.linVelPcent = 0.0
       self.vel.angVelPcent = 0.0
@@ -1011,9 +1021,9 @@ class eodNav:
     s += "Nav: " + self.navStatePrintNames[self.navState] + " Auto: " + self.autoStatePrintNames[self.autoState]
     s += " Dest: " + str(self.dest.destPresent)
     #s += " A: " + str(self.avoidState) 
-    s += " Obs Avoid: " + str([self.OBS_AVOID & self.OBS_L, self.OBS_AVOID & self.OBS_C, self.OBS_AVOID & self.OBS_R])
+    s += " Obs : " + str([self.OBS_AVOID & self.OBS_L, self.OBS_AVOID & self.OBS_C, self.OBS_AVOID & self.OBS_R])
     #s += " Obs Stop: " + str([self.OBS_STOP & self.OBS_L, self.OBS_STOP & self.OBS_C, self.OBS_STOP & self.OBS_R])
-    #s += " DesX %0.3f " %self.desPose[0] + " CurX %0.3f " %self.robotPose[0]
+    s += " DesX %0.3f " %self.desPose[0] + " CurX %0.3f " %self.robotPose[0]
     try:
       s += " cx " + str(self.destcx) + " cy " + str(self.destcy)
     except:
@@ -1063,6 +1073,7 @@ class eodNav:
     v_c = self.smooth(self.val_c, self.UltraFilterSize)
     v_r = self.smooth(self.val_r, self.UltraFilterSize)
     v_l = self.smooth(self.val_l, self.UltraFilterSize)            
+    return [numpy.median(v_l), numpy.median(v_c), numpy.median(v_r)]
     return [v_l.mean(), v_c.mean(), v_r.mean()]
     
   def smooth(self, x, window_len=11,window='hanning'):

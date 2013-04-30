@@ -1,8 +1,8 @@
 <!--xml-->
 <launch>    
     <include file="$(find monoCam)/launch/monoCam.launch" />
-    <rosparam command="load" file="$(find eod_nav)/launch/nav.yaml"/>
+    <rosparam command="load" file="$(find eod_nav)/launch/nav.yaml" />
     <param name="/eod_cam" value="camera/image_raw" />
-    <node pkg="OpenTLD" type="destinationTLD" name="OpenTLD" output="screen" />
+    <node pkg="OpenTLD" type="destinationTLD" name="OpenTLD" output="screen" respawn="True" />
     <!--node pkg="eod_nav" type="eod_nav.py" name="nav" output="screen"/-->
 </launch>
