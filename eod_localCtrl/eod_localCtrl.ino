@@ -164,7 +164,7 @@ void setup()
   nh.advertise(pub_lenc);
   nh.advertise(pub_renc);  
   nh.advertise(pub_battery_motor);
-  //nh.advertise(pub_battery_pc);
+  nh.advertise(pub_battery_pc);
   
   pinMode(ENC_RIGHT, INPUT);
   digitalWrite(ENC_RIGHT, HIGH);
@@ -174,6 +174,7 @@ void setup()
   attachInterrupt(ENC_INT_RIGHT, updateRightEncoder, RISING);
   rangeTime = millis() + 250; 
   encTime = millis() + 20; 
+  batteryTime = millis() + 5000;
   servo1.attach(SERVO_PIN);
   servo1.write(98); 
 }
@@ -201,8 +202,8 @@ void loop()
   
   if(millis() < batteryTime)
   {
-    batteryMotor.data = analogRead(BATTERY_MOTOR_PIN)/35.42;
-    batteryPc.data = analogRead(BATTERY_PC_PIN)/35.42;
+    batteryMotor.data = analogRead(BATTERY_MOTOR_PIN)/36.052;
+    batteryPc.data = analogRead(BATTERY_PC_PIN)/18.899;
     pub_battery_motor.publish(&batteryMotor);
     pub_battery_pc.publish(&batteryPc);
     batteryTime = millis() + 5000; //Publish every 5s
