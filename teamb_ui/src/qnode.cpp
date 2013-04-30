@@ -27,18 +27,30 @@ bool QNode::init() {
     ros::start();
 	ros::NodeHandle n;
 
+    std::string camName;
+    n.param<std::string>("/eod_cam", camName, "/camera/image_raw");
+
+    image_transport::ImageTransport it(n);
+    // PUBLISHERS
     mode_msg = n.advertise<std_msgs::Int32>("/Mode", 1000);
     uiStatus_msg = n.advertise<std_msgs::Int32>("/UiStatus", 1000);
     dest_msg = n.advertise<Dest>("/UserDestination", 1000);
-	  std::string camName;
-    n.param<std::string>("/eod_cam", camName, "/camera/image_raw");  
-    image_transport::ImageTransport it(n);
-    sub  = it.subscribe(camName, 1, &QNode::imageCallback, this, image_transport::TransportHints("compressed"));
-    sub2 = it.subscribe(camName, 1, &QNode::imageCallback2, this, image_transport::TransportHints("compressed"));
-    rect_msg = n.subscribe("/destination", 1, &QNode::sendCoord,this);
+
+    // SUBSCRIBERS
+    selImage  = it.subscribe(camName, 1, &QNode::imageCallback, this, image_transport::TransportHints("compressed"));
+    trkImage = it.subscribe(camName, 1, &QNode::imageCallback2, this, image_transport::TransportHints("compressed"));
+
+    rect_msg = n.subscribe("/destination", 1, &QNode::dispCoord,this);
+    mtr_batt = n.subscribe("/battery_motor_voltage", 1, &QNode::mtrBattInput,this);
+    pc_batt = n.subscribe("/battery_pc_voltage", 1, &QNode::pcBattInput,this);
+
+    nav_state = n.subscribe("/Nav_State", 1, &QNode::dispRobotState,this);
+    err_state = n.subscribe("/Nav_Error_Id", 1,&QNode::dispErrInput,this);
+
     start();
 	return true;
 }
+
 
 void QNode::run() {
 	ros::Rate loop_rate(1);
@@ -55,6 +67,18 @@ void QNode::run() {
 		shutdown();
 }
 
+void QNode::dispRobotState(const std_msgs::UInt32 state){
+    int robot_state;
+    robot_state = state.data;
+    Q_EMIT navStateInfo(robot_state);
+}
+
+void QNode::dispErrInput(const std_msgs::UInt32 state){
+    int err_state;
+    err_state = state.data;
+    Q_EMIT errStateInfo(err_state);
+}
+
 void QNode::publishInfo(int x, int y, int xw, int yw){
     ImgAreaSelected.destPresent = true;
     ImgAreaSelected.destX= x;
@@ -64,7 +88,7 @@ void QNode::publishInfo(int x, int y, int xw, int yw){
     dest_msg.publish(ImgAreaSelected);
 }
 
-void QNode::sendCoord(const Dest ImgAreaRecvd){
+void QNode::dispCoord(const Dest ImgAreaRecvd){
         bool destPresent;
         int x,y,xw,yw;
         destPresent = ImgAreaRecvd.destPresent;
@@ -74,6 +98,20 @@ void QNode::sendCoord(const Dest ImgAreaRecvd){
         yw = ImgAreaRecvd.destHeight;
         //qDebug()<<"Img Coord Recvd"<<x<<y<<xw<<yw;
         Q_EMIT coordRecvd(destPresent,x,y,xw,yw);
+}
+
+void QNode::mtrBattInput(const std_msgs::Float32 battStateRecvd) {
+    float battState;
+    battState = battStateRecvd.data;
+    qDebug()<<"Battery State Received"<<battState;
+    Q_EMIT mtrBattInfo(battState);
+}
+
+void QNode::pcBattInput(const std_msgs::Float32 battStateRecvd) {
+    float battState;
+    battState = battStateRecvd.data;
+    qDebug()<<"Battery State Received"<<battState;
+    Q_EMIT pcBattInfo(battState);
 }
 
 void QNode::log( const LogLevel &level, const std::string &msg) {

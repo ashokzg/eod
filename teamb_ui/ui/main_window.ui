@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>891</width>
-    <height>704</height>
+    <width>994</width>
+    <height>714</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -40,7 +40,7 @@
        <locale language="English" country="Australia"/>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tab_status">
        <attribute name="title">
@@ -87,44 +87,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>511</width>
-          <height>511</height>
-         </rect>
-        </property>
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Minimum" vsizetype="MinimumExpanding">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="toolTip">
-         <string>Please wait while video loads!</string>
-        </property>
-        <property name="verticalScrollBarPolicy">
-         <enum>Qt::ScrollBarAlwaysOff</enum>
-        </property>
-        <property name="horizontalScrollBarPolicy">
-         <enum>Qt::ScrollBarAlwaysOff</enum>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignCenter</set>
-        </property>
-        <property name="rubberBandSelectionMode">
-         <enum>Qt::IntersectsItemShape</enum>
-        </property>
-       </widget>
-      </widget>
-      <widget class="QWidget" name="tab_2">
-       <attribute name="title">
-        <string>Disparity Map</string>
-       </attribute>
-       <widget class="eodImg" name="graphicsView_3">
-        <property name="geometry">
-         <rect>
-          <x>0</x>
-          <y>0</y>
-          <width>721</width>
-          <height>691</height>
+          <width>621</width>
+          <height>611</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -159,7 +123,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>891</width>
+     <width>994</width>
      <height>25</height>
     </rect>
    </property>
@@ -219,17 +183,16 @@
         <property name="geometry">
          <rect>
           <x>180</x>
-          <y>30</y>
-          <width>131</width>
-          <height>51</height>
+          <y>20</y>
+          <width>141</width>
+          <height>101</height>
          </rect>
         </property>
         <property name="cursor">
          <cursorShape>PointingHandCursor</cursorShape>
         </property>
         <property name="text">
-         <string>STOP/ CLEAR 
-TARGET</string>
+         <string>STOP/ RESET</string>
         </property>
         <property name="iconSize">
          <size>
@@ -238,18 +201,111 @@ TARGET</string>
          </size>
         </property>
        </widget>
+       <widget class="QListView" name="view_logging">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>240</y>
+          <width>311</width>
+          <height>321</height>
+         </rect>
+        </property>
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="MinimumExpanding" vsizetype="Minimum">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="verticalScrollBarPolicy">
+         <enum>Qt::ScrollBarAsNeeded</enum>
+        </property>
+        <property name="horizontalScrollBarPolicy">
+         <enum>Qt::ScrollBarAlwaysOff</enum>
+        </property>
+        <property name="alternatingRowColors">
+         <bool>true</bool>
+        </property>
+        <property name="movement">
+         <enum>QListView::Free</enum>
+        </property>
+        <property name="isWrapping" stdset="0">
+         <bool>false</bool>
+        </property>
+        <property name="resizeMode">
+         <enum>QListView::Fixed</enum>
+        </property>
+        <property name="wordWrap">
+         <bool>true</bool>
+        </property>
+       </widget>
+       <widget class="QLabel" name="label_5">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>220</y>
+          <width>91</width>
+          <height>21</height>
+         </rect>
+        </property>
+        <property name="mouseTracking">
+         <bool>true</bool>
+        </property>
+        <property name="toolTip">
+         <string>Gives the Feedback from the robot of the mode.</string>
+        </property>
+        <property name="whatsThis">
+         <string>Mode Status Label</string>
+        </property>
+        <property name="autoFillBackground">
+         <bool>false</bool>
+        </property>
+        <property name="lineWidth">
+         <number>2</number>
+        </property>
+        <property name="text">
+         <string>Logging:</string>
+        </property>
+       </widget>
+       <widget class="QLabel" name="label_4">
+        <property name="geometry">
+         <rect>
+          <x>31</x>
+          <y>151</y>
+          <width>16</width>
+          <height>17</height>
+         </rect>
+        </property>
+        <property name="mouseTracking">
+         <bool>true</bool>
+        </property>
+        <property name="toolTip">
+         <string>Gives the Feedback from the robot of the mode.</string>
+        </property>
+        <property name="whatsThis">
+         <string>Mode Status Label</string>
+        </property>
+        <property name="autoFillBackground">
+         <bool>false</bool>
+        </property>
+        <property name="lineWidth">
+         <number>2</number>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
        <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
-          <x>30</x>
-          <y>160</y>
-          <width>281</width>
-          <height>52</height>
+          <x>10</x>
+          <y>130</y>
+          <width>311</width>
+          <height>83</height>
          </rect>
         </property>
         <layout class="QFormLayout" name="formLayout">
          <item row="0" column="0">
-          <widget class="QLabel" name="label_4">
+          <widget class="QLabel" name="label_6">
            <property name="mouseTracking">
             <bool>true</bool>
            </property>
@@ -266,7 +322,7 @@ TARGET</string>
             <number>2</number>
            </property>
            <property name="text">
-            <string>Mode Status:</string>
+            <string>Robot State:</string>
            </property>
           </widget>
          </item>
@@ -304,12 +360,41 @@ TARGET</string>
             <number>2</number>
            </property>
            <property name="text">
-            <string>Battery Status:</string>
+            <string>Motor Battery Status:</string>
            </property>
           </widget>
          </item>
          <item row="1" column="1">
-          <widget class="QProgressBar" name="battProgressBar">
+          <widget class="QProgressBar" name="mtrBattStatus">
+           <property name="value">
+            <number>24</number>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QLabel" name="batteryIndLbl_2">
+           <property name="mouseTracking">
+            <bool>true</bool>
+           </property>
+           <property name="toolTip">
+            <string>Gives the Feedback from the robot of the mode.</string>
+           </property>
+           <property name="whatsThis">
+            <string>Mode Status Label</string>
+           </property>
+           <property name="autoFillBackground">
+            <bool>false</bool>
+           </property>
+           <property name="lineWidth">
+            <number>2</number>
+           </property>
+           <property name="text">
+            <string>PC Battery Status:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="1">
+          <widget class="QProgressBar" name="pcBattStatus">
            <property name="value">
             <number>24</number>
            </property>
@@ -317,95 +402,27 @@ TARGET</string>
          </item>
         </layout>
        </widget>
-       <widget class="QListView" name="view_logging">
+       <widget class="QWidget" name="">
         <property name="geometry">
          <rect>
-          <x>10</x>
-          <y>250</y>
-          <width>311</width>
-          <height>321</height>
+          <x>9</x>
+          <y>20</y>
+          <width>161</width>
+          <height>101</height>
          </rect>
         </property>
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="MinimumExpanding" vsizetype="Minimum">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="verticalScrollBarPolicy">
-         <enum>Qt::ScrollBarAsNeeded</enum>
-        </property>
-        <property name="horizontalScrollBarPolicy">
-         <enum>Qt::ScrollBarAlwaysOff</enum>
-        </property>
-        <property name="alternatingRowColors">
-         <bool>true</bool>
-        </property>
-        <property name="movement">
-         <enum>QListView::Free</enum>
-        </property>
-        <property name="isWrapping" stdset="0">
-         <bool>true</bool>
-        </property>
-        <property name="resizeMode">
-         <enum>QListView::Fixed</enum>
-        </property>
-        <property name="wordWrap">
-         <bool>true</bool>
-        </property>
-       </widget>
-       <widget class="QLabel" name="label_5">
-        <property name="geometry">
-         <rect>
-          <x>10</x>
-          <y>230</y>
-          <width>88</width>
-          <height>19</height>
-         </rect>
-        </property>
-        <property name="mouseTracking">
-         <bool>true</bool>
-        </property>
-        <property name="toolTip">
-         <string>Gives the Feedback from the robot of the mode.</string>
-        </property>
-        <property name="whatsThis">
-         <string>Mode Status Label</string>
-        </property>
-        <property name="autoFillBackground">
-         <bool>false</bool>
-        </property>
-        <property name="lineWidth">
-         <number>2</number>
-        </property>
-        <property name="text">
-         <string>Logging:</string>
-        </property>
-       </widget>
-       <widget class="QCheckBox" name="cb_enableManualCtrl">
-        <property name="geometry">
-         <rect>
-          <x>30</x>
-          <y>130</y>
-          <width>171</width>
-          <height>22</height>
-         </rect>
-        </property>
-        <property name="text">
-         <string>Enable Joystick</string>
-        </property>
-       </widget>
-       <widget class="QWidget" name="layoutWidget">
-        <property name="geometry">
-         <rect>
-          <x>33</x>
-          <y>28</y>
-          <width>131</width>
-          <height>62</height>
-         </rect>
-        </property>
-        <layout class="QVBoxLayout" name="verticalLayout_2">
-         <item>
+        <layout class="QFormLayout" name="formLayout_2">
+         <item row="1" column="0" colspan="2">
+          <widget class="QPushButton" name="pb_setTarget">
+           <property name="cursor">
+            <cursorShape>PointingHandCursor</cursorShape>
+           </property>
+           <property name="text">
+            <string>Set Target</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0" colspan="2">
           <widget class="QPushButton" name="pb_connect">
            <property name="enabled">
             <bool>true</bool>
@@ -427,30 +444,14 @@ TARGET</string>
            </property>
           </widget>
          </item>
-         <item>
-          <widget class="QPushButton" name="pb_setTarget">
-           <property name="cursor">
-            <cursorShape>PointingHandCursor</cursorShape>
-           </property>
+         <item row="2" column="0" colspan="2">
+          <widget class="QPushButton" name="pb_confirmTracking">
            <property name="text">
-            <string>Set Target</string>
+            <string>Confirm Tracking</string>
            </property>
           </widget>
          </item>
         </layout>
-       </widget>
-       <widget class="QPushButton" name="pb_confirmTracking">
-        <property name="geometry">
-         <rect>
-          <x>33</x>
-          <y>96</y>
-          <width>132</width>
-          <height>27</height>
-         </rect>
-        </property>
-        <property name="text">
-         <string>Confirm Tracking</string>
-        </property>
        </widget>
       </widget>
      </item>
@@ -569,7 +570,7 @@ TARGET</string>
    <hints>
     <hint type="sourcelabel">
      <x>711</x>
-     <y>114</y>
+     <y>147</y>
     </hint>
     <hint type="destinationlabel">
      <x>742</x>
@@ -585,7 +586,7 @@ TARGET</string>
    <hints>
     <hint type="sourcelabel">
      <x>711</x>
-     <y>147</y>
+     <y>180</y>
     </hint>
     <hint type="destinationlabel">
      <x>591</x>
@@ -609,22 +610,6 @@ TARGET</string>
     </hint>
    </hints>
   </connection>
-  <connection>
-   <sender>cb_enableManualCtrl</sender>
-   <signal>stateChanged(int)</signal>
-   <receiver>MainWindowDesign</receiver>
-   <slot>toggleManualMode(int)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>749</x>
-     <y>210</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>739</x>
-     <y>254</y>
-    </hint>
-   </hints>
-  </connection>
  </connections>
  <slots>
   <slot>setTargetInPic()</slot>
@@ -633,5 +618,6 @@ TARGET</string>
   <slot>connectToROS()</slot>
   <slot>confirmTracking()</slot>
   <slot>toggleManualMode(int)</slot>
+  <slot>launch()</slot>
  </slots>
 </ui>
