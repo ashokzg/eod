@@ -24,6 +24,7 @@ alias eodctrl="roslaunch eod_ctrl eod_ctrl_open.launch"
 alias eodnavl="roslaunch eod_nav prim.launch"
 alias eodnav="rosrun eod_nav eod_nav.py"
 alias eodui="roslaunch teamb_ui teamb_ui.launch"
+alias eoduio="rosrun teamb_ui teamb_ui"
 
 #alias plotm ="plotvel & plotmotor & plotdvel &"
 alias mvrobot="rostopic pub twist geometry_msgs/Twist \"linear: 

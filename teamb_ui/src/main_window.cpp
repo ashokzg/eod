@@ -29,8 +29,8 @@ MainWindow::MainWindow(int argc, char** argv, QWidget *parent)
     ui.pb_confirmTracking->setEnabled(false);
     ui.mtrBattStatus->setRange(0,99);
     ui.pcBattStatus->setRange(0,99);
-    ui.mtrBattStatus->setValue(99);
-    ui.pcBattStatus->setValue(99);
+    ui.mtrBattStatus->setValue(0);
+    ui.pcBattStatus->setValue(0);
 
 
     //Initialize Current State
@@ -138,71 +138,30 @@ void MainWindow::mtrBattUpdate(float mtrBattVal) {
     int val = (mtrBattVal-MOTOR_BATTERY_VOLTAGE_LOW)*100/(MOTOR_BATTERY_VOLTAGE_HIGH-MOTOR_BATTERY_VOLTAGE_LOW);
 
     ui.mtrBattStatus->setValue(val);
-    if(val<20){
-        if(flag2 ==0){
-        flag2= 1;
-            QMessageBox::warning(this, tr("Motor Battery Warning"),
-                                   tr("The Motor Battery Supply is below it's threshold.\n"
-                                      "Please change the battery and charge it!"),
-                                   QMessageBox::Ok);
 
-        }
-    }
-    if(val>20){
-        flag2 = 0;
-    }
 
 }
 
 void MainWindow::pcBattUpdate(float pcBattVal) {
     int val = (pcBattVal-PC_BATTERY_VOLTAGE_LOW)*100/(PC_BATTERY_VOLTAGE_HIGH-PC_BATTERY_VOLTAGE_LOW);
     ui.pcBattStatus->setValue(val);
-
-    if(val<25){
-        if(flag1==0){
-            flag1 = 1;
-        QMessageBox::warning(this, tr("PC Battery Warning"),
-                                   tr("The PC Battery Supply is below it's threshold.\n"
-                                      "Please change the battery and charge it!"),
-                                   QMessageBox::Ok);
-        }
-    }
-    if(val>25){
-        flag1 = 0;
-    }
-
 }
 
 void MainWindow::navStateReport(int state) {
     switch(state){
     case 0:
-        commandToShell("rosrun sound_play say.py \"UI IS NOW READY FOR USE\"&");
-        commandToShell("rosrun sound_play say.py \"UI IS NOW READY FOR USE\"&");
-        commandToShell("rosrun sound_play say.py \"UI IS NOW READY FOR USE\"&");
         robot_state = 0;
         break;
     case 1:
-        commandToShell("rosrun sound_play say.py \"ROBOT IS TRACKING DESTINATION. PLEASE CONFIRM THE LOCATION\"&");
-        commandToShell("rosrun sound_play say.py \"ROBOT IS TRACKING DESTINATION. PLEASE CONFIRM THE LOCATION\"&");
-        commandToShell("rosrun sound_play say.py \"ROBOT IS TRACKING DESTINATION. PLEASE CONFIRM THE LOCATION \"&");
         robot_state = 1;
         break;
     case 2:
-        commandToShell("rosrun sound_play say.py \"ROBOT IN AUTO-MODE\"&");
-        commandToShell("rosrun sound_play say.py \"ROBOT IN AUTO-MODE\"&");
-        commandToShell("rosrun sound_play say.py \"ROBOT IN AUTO-MODE\"&");
         robot_state = 2;
         break;
     case 3:
-        commandToShell("rosrun sound_play say.py \"ROBOT IN MANUAL MODE\"&");
-        commandToShell("rosrun sound_play say.py \"ROBOT IN MANUAL MODE\"&");
-        commandToShell("rosrun sound_play say.py \"ROBOT IN MANUAL MODE\"&");
         robot_state = 3;
         break;
     case 4:
-        commandToShell("rosrun sound_play say.py \"ERROR!\"&");
-        commandToShell("rosrun sound_play say.py \"ERROR!\"&");
-        commandToShell("rosrun sound_play say.py \"ERROR!\"&");
         robot_state = 4;
         break;
     }
@@ -246,6 +205,13 @@ void MainWindow::errStateReport(int state) {
         commandToShell("rosrun sound_play say.py \"ROBOT IS LOST. PLEASE MANUALLY CONTROL AND RELOCATE DESTINATION.\"&");
         //qDebug()<<"ROBOT LOST";
         break;
+    case 8:
+        commandToShell("rosrun sound_play say.py \"ROBOT HAS REACHED DESTINATION.\"&");
+        commandToShell("rosrun sound_play say.py \"ROBOT HAS REACHED DESTINATION.\"&");
+        commandToShell("rosrun sound_play say.py \"ROBOT HAS REACHED DESTINATION.\"&");
+        //qDebug()<<"ROBOT LOST";
+        break;
+      
     }
 }
 

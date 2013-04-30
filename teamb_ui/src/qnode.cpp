@@ -3,6 +3,25 @@
 #include <iostream>
 #include <math.h>
 
+float rndup(float n)//round up a float type and show one decimal place
+{
+      float t;
+      t=n-floor(n);
+      if (t>=0.5)
+      {
+              n*=10;//where n is the multi-decimal float
+              ceil(n);
+              n/=10;
+              }
+      else
+      {
+              n*=10;//where n is the multi-decimal float
+              floor(n);
+              n/=10;
+              }
+      return n;
+}
+
 namespace teamb_ui {
 
 QNode::QNode(int argc, char** argv ) :
@@ -104,16 +123,15 @@ void QNode::dispCoord(const Dest ImgAreaRecvd){
 void QNode::mtrBattInput(const std_msgs::Float32 battStateRecvd) {
     float battState;
     battState = battStateRecvd.data;
-
-    //qDebug()<<"Battery State Received"<<battState;
-    Q_EMIT mtrBattInfo(floor(battState));
+    //qDebug()<<"Battery State Received"<<rndup(battState);
+    Q_EMIT mtrBattInfo(rndup(battState));
 }
 
 void QNode::pcBattInput(const std_msgs::Float32 battStateRecvd) {
     float battState;
     battState = battStateRecvd.data;
-    //qDebug()<<"Battery State Received"<<battState;
-    Q_EMIT pcBattInfo(floor(battState));
+    //qDebug()<<"Battery State Received"<<rndup(battState);
+    Q_EMIT pcBattInfo(rndup(battState));
 }
 
 void QNode::log( const LogLevel &level, const std::string &msg) {

@@ -55,9 +55,10 @@ ERR = enum(
   #--- ERROR CODES OF NAV STATE ---#
   ERR_UNKNOWN_DESTINATION = 6,    #Asked robot to move autonomously without giving destination
   ERR_ROBOT_LOST          = 7,    #The robot is lost.
+  REACHED_DESTINATION     = 8,
   #--- ERROR CODES OF GENERAL ---#
-  NONE                    = 8,    #No errors. Default value of any error state
-  PREVIOUS                = 9)    #Same error as previous
+  NONE                    = 9,    #No errors. Default value of any error state
+  PREVIOUS                = 10)    #Same error as previous
 
 USR = enum(
   #States of the UI
@@ -356,9 +357,11 @@ class eodNav:
       except AutoNavError as e:
         if e.errId <= ERR.ERR_DYNAMIC_OBSTACLE:
           rospy.logerr("Something really stupid has happened")
-        else:
+        elif e.errId != ERR.REACHED_DESTINATION:
           rospy.logerr("Poor robot lost it's destination")
-        rospy.logerr("Auto Mode error:"  + self.errPrintNames[e.errId] + " " + e.msg)
+          rospy.logerr("Auto Mode error:"  + self.errPrintNames[e.errId] + " " + e.msg)
+        else:
+          rospy.logerr("Destination Reached)
         self.errStatePub.publish(e.errId)
         #Setting this will make the state go to Manual mode in the next iteration
         self.robotResp = AUTO_OUTPUT.ROBOT_LOST
@@ -814,6 +817,7 @@ class eodNav:
   def autoDestReached(self):
     rospy.logwarn("Yay! Destination reached")
     self.robotMove(self.STOP)
+    raise AutoNavError(ERR.REACHED_DESTINATION, "Reached destination")
     rospy.logwarn("Please implement destination reached fucntion boss")
     
     
