@@ -12,6 +12,8 @@
 
 #include <std_msgs/String.h>
 #include <std_msgs/Int32.h>
+#include <std_msgs/UInt32.h>
+#include <std_msgs/Float32.h>
 #include <std_msgs/Empty.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/image_encodings.h>
@@ -55,8 +57,11 @@ public:
     void imageCallback2(const sensor_msgs::ImageConstPtr& msg);
     void shutdown();
 	QImage* getCurrImg();
-	void sendCoord(const Dest ImgAreaRecvd);
-
+    void dispCoord(const Dest ImgAreaRecvd);
+    void mtrBattInput(const std_msgs::Float32 input);
+    void pcBattInput(const std_msgs::Float32 input);
+    void dispRobotState(const std_msgs::UInt32 state);
+    void dispErrInput(const std_msgs::UInt32 state);
 
 Q_SIGNALS:
 	void loggingUpdated();
@@ -65,6 +70,11 @@ Q_SIGNALS:
     void newImg(cv::Mat img);
     void trkImgDisp(cv::Mat img);
     void coordRecvd(bool,int,int,int,int);
+    void mtrBattInfo(float);
+    void pcBattInfo(float);
+    void navStateInfo(int);
+    void errStateInfo(int);
+
 
 public Q_SLOTS:
 	void update();
@@ -77,10 +87,17 @@ private:
     ros::Publisher dest_msg;
     ros::Publisher mode_msg;
     ros::Publisher uiStatus_msg;
+
     ros::Subscriber rect_msg;
-	image_transport::Subscriber sub;
-	image_transport::Subscriber sub2;
-	QImage *currImg; 
+    ros::Subscriber mtr_batt;
+    ros::Subscriber pc_batt;
+    ros::Subscriber nav_state;
+    ros::Subscriber err_state;
+
+    image_transport::Subscriber selImage;
+    image_transport::Subscriber trkImage;
+
+    QImage *currImg;
 	QStringListModel logging_model;
     Dest ImgAreaSelected;
     std_msgs::Int32 rosState;
