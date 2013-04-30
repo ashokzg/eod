@@ -156,7 +156,7 @@ class eodNav:
     self.OBS_STOP = 0
     self.OBS_AVOID = 0
     self.TIME_STEP = 50 #ms
-    self.AREA_THRESHOLD = 0.12 #If destination is greater than 50% of the image stop.
+    self.AREA_THRESHOLD = 0.25 #If destination is greater than 50% of the image stop.
     self.ultraCount = 0
     self.avoidState = 0
     self.sweepSet = False
@@ -561,7 +561,8 @@ class eodNav:
           self.rightLimit = self.imgWidth - 80
         elif self.avoidDirection == self.RIGHT:
           self.leftLimit = 40
-          self.rightLimit = 120                    
+          self.rightLimit = 120       
+        self.desPose[0] = self.robotPose[0] + min(self.sweepDist)/100 + 0.1             
     else:
       self.obsAvoidCount += 1
       leftLimit = self.leftLimit
@@ -700,9 +701,9 @@ class eodNav:
     else:  
       mult = 1
     if self.backTrackCount % 120 < 40:
-      self.vel.angVelPcent = 0.35*mult
+      self.vel.angVelPcent = 3*mult
     elif self.backTrackCount %120 < 80:
-      self.vel.angVelPcent = -0.35*mult
+      self.vel.angVelPcent = -3*mult
     else:
       self.vel.angVelPcent = 0.0
     self.backTrackCount += 1 #Time increment every TIME_STEP    
@@ -747,10 +748,10 @@ class eodNav:
       if self.dest.destPresent == True:	
         #calczone defines where we maintain our destination
         leftLimit = self.imgWidth/2 - 50
-	rightLimit = self.imgWidth/2 + 50      
+        rightLimit = self.imgWidth/2 + 50      
         cx = self.dest.destX + self.dest.destWidth/2
         cy = self.dest.destY + self.dest.destHeight/2
-	print leftLimit, cx, rightLimit
+	      #print leftLimit, cx, rightLimit
         #If the destination is slipping towards the left, turn left
         if cx < leftLimit:
           self.vel.linVelPcent = self.obsRotLinVel
@@ -809,10 +810,11 @@ class eodNav:
     #after some time choose to turn LEFT
     elif self.autoDestSearchAction % 3 == 1:
       self.vel.linVelPcent = 0.0
+      print "Searching"
       if self.avoidDirection == self.RIGHT:
-        self.vel.angVelPcent = 0.45
+        self.vel.angVelPcent = 3
       else:
-        self.vel.angVelPcent = -0.45
+        self.vel.angVelPcent = -3
     elif self.autoDestSearchAction % 3 == 2:
       self.vel.linVelPcent = 0.0
       self.vel.angVelPcent = 0.0
