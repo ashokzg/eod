@@ -57,8 +57,12 @@ bool QNode::init() {
     dest_msg = n.advertise<Dest>("/UserDestination", 1000);
 
     // SUBSCRIBERS
-    selImage  = it.subscribe(camName, 1, &QNode::imageCallback, this, image_transport::TransportHints("compressed"));
-    trkImage = it.subscribe(camName, 1, &QNode::imageCallback2, this, image_transport::TransportHints("compressed"));
+   // selImage  = it.subscribe(camName, 1, &QNode::imageCallback, this, image_transport::TransportHints("compressed"));
+   // trkImage = it.subscribe(camName, 1, &QNode::imageCallback2, this, image_transport::TransportHints("compressed"));
+
+    selImage  = it.subscribe("/camera/image_raw", 1, &QNode::imageCallback, this, image_transport::TransportHints("compressed"));
+    trkImage = it.subscribe("/camera/image_raw", 1, &QNode::imageCallback2, this, image_transport::TransportHints("compressed"));
+
 
     rect_msg = n.subscribe("/destination", 1, &QNode::dispCoord,this);
     mtr_batt = n.subscribe("/battery_motor_voltage", 1, &QNode::mtrBattInput,this);

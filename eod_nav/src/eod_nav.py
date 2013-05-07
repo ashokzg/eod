@@ -361,7 +361,7 @@ class eodNav:
           rospy.logerr("Poor robot lost it's destination")
           rospy.logerr("Auto Mode error:"  + self.errPrintNames[e.errId] + " " + e.msg)
         else:
-          rospy.logerr("Destination Reached)
+          rospy.logerr("Destination Reached")
         self.errStatePub.publish(e.errId)
         #Setting this will make the state go to Manual mode in the next iteration
         self.robotResp = AUTO_OUTPUT.ROBOT_LOST

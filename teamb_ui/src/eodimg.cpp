@@ -57,7 +57,8 @@ void eodImg::mouseReleaseEvent(QMouseEvent *ev)
 {
     if(currentlySelecting == true)
     {
-    rubber->palette.setBrush(QPalette::Foreground, QBrush(Qt::blue));
+        //changed for sake of picture to green - Actual blue
+    rubber->palette.setBrush(QPalette::Foreground, QBrush(Qt::green));
     rubber->show();
     xw = ev->pos().x()-x;
     yw = ev->pos().y()-y;
