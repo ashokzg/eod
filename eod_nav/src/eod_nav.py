@@ -157,7 +157,7 @@ class eodNav:
     self.OBS_STOP = 0
     self.OBS_AVOID = 0
     self.TIME_STEP = 50 #ms
-    self.AREA_THRESHOLD = 0.25 #If destination is greater than 50% of the image stop.
+    self.AREA_THRESHOLD = 0.15 #If destination is greater than 50% of the image stop.
     self.ultraCount = 0
     self.avoidState = 0
     self.sweepSet = False
@@ -295,11 +295,11 @@ class eodNav:
     self.destcx = self.dest.destX + self.dest.destWidth/2
     self.destcy = self.dest.destY + self.dest.destHeight/2
     if self.dest.destPresent == True:
-      if self.destcy > 180 and self.destcy < 300:
+      if self.destcy > 100 and self.destcy < 380:
         self.slope = self.GROUNDLEVEL
-      elif self.destcy < 180:
+      elif self.destcy < 100:
         self.slope = self.DOWNSLOPE
-      elif self.destcy > 280:
+      elif self.destcy > 380:
         self.slope = self.UPSLOPE   
     
 
@@ -361,7 +361,7 @@ class eodNav:
           rospy.logerr("Poor robot lost it's destination")
           rospy.logerr("Auto Mode error:"  + self.errPrintNames[e.errId] + " " + e.msg)
         else:
-          rospy.logerr("Destination Reached)
+          rospy.logerr("Destination Reached")
         self.errStatePub.publish(e.errId)
         #Setting this will make the state go to Manual mode in the next iteration
         self.robotResp = AUTO_OUTPUT.ROBOT_LOST
@@ -398,8 +398,8 @@ class eodNav:
       self.vel.angVelPcent = 0
     else:
       self.vel = self.manCmdVel
-    self.twist.linear.x = self.vel.linVelPcent
-    self.twist.angular.z = self.vel.angVelPcent*5
+    self.twist.linear.x = self.vel.linVelPcent*2
+    self.twist.angular.z = self.vel.angVelPcent*6
     self.robotTwistPub.publish(self.twist)
 
 
@@ -565,7 +565,12 @@ class eodNav:
         elif self.avoidDirection == self.RIGHT:
           self.leftLimit = 40
           self.rightLimit = 120       
-        self.desPose[0] = self.robotPose[0] + min(self.sweepDist)/100 + 0.1             
+        self.sweepIncrement = min(self.sweepDist)/100 + 0.1
+        self.finalIncrement = min(self.increment, self.sweepIncrement)
+        if self.robotPose[0] > 0:
+          self.desPose[0] = self.robotPose[0] + self.finalIncrement
+        else:
+          self.desPose[0] = self.robotPose[0] - self.finalIncrement                
     else:
       self.obsAvoidCount += 1
       leftLimit = self.leftLimit
@@ -864,7 +869,7 @@ class eodNav:
     os = False
     dl = False
     if self.OBS_AVOID > 0:
-      if self.destArea < 0.03:
+      if self.destArea < 0.025:
         oa = True
     if self.OBS_STOP > 0:
       os = True
@@ -894,7 +899,11 @@ class eodNav:
             self.vel.angVelPcent = 0
             self.setCmdVel()
             self.desPose = copy.deepcopy(self.robotPose)
-            self.desPose[0] = self.desPose[0] + self.dist[1]/100 + 0.1
+            self.increment = self.dist[1]/100 + 0.1
+            if self.desPose[0] > 0:
+              self.desPose[0] = self.desPose[0] + self.increment
+            else:
+              self.desPose[0] = self.desPose[0] - self.increment
             self.obsAvoidStart = True
           if self.obsAvoidStart == True and self.robotPose[0] > self.desPose[0]:
             self.obsAvoidStart = False            
