@@ -157,7 +157,7 @@ class eodNav:
     self.OBS_STOP = 0
     self.OBS_AVOID = 0
     self.TIME_STEP = 50 #ms
-    self.AREA_THRESHOLD = 0.15 #If destination is greater than 50% of the image stop.
+    self.AREA_THRESHOLD = 0.25 #If destination is greater than 50% of the image stop.
     self.ultraCount = 0
     self.avoidState = 0
     self.sweepSet = False
